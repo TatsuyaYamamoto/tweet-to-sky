@@ -1,3 +1,5 @@
+import type { MessageFromBackground } from "~types/MessageFromBackground";
+
 export {};
 
 const getCurrentActiveTab = async () => {
@@ -48,7 +50,15 @@ chrome.webRequest.onBeforeRequest.addListener(
     console.log(details.method);
     console.log(tweetText);
 
-    sendMessage({ type: "tweetText", value: tweetText }).catch((e) => {
+    if (!tweetText) {
+      return;
+    }
+
+    const message: MessageFromBackground = {
+      type: "detectTweet",
+      value: tweetText,
+    };
+    sendMessage(message).catch((e) => {
       console.error(e);
     });
   },

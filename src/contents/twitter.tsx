@@ -1,7 +1,10 @@
 import reactToastifyStyle from "data-text:react-toastify/dist/ReactToastify.css";
 import type { PlasmoCSConfig, PlasmoGetStyle } from "plasmo";
 import { useEffect, type FC } from "react";
-import { toast, ToastContainer } from "react-toastify";
+import { toast, ToastContainer, type ToastOptions } from "react-toastify";
+import { safeParse } from "valibot";
+
+import { MessageFromBackgroundSchema } from "~types/MessageFromBackground";
 
 export const config: PlasmoCSConfig = {
   matches: ["https://twitter.com/*"],
@@ -11,25 +14,40 @@ window.addEventListener("load", () => {
   console.log("content script loaded 🦋");
 });
 
+const defaultToastOptions: ToastOptions = {
+  autoClose: 2000,
+  position: "bottom-right",
+  type: "success",
+  theme: "colored",
+};
+
 const ContentScriptUi: FC = () => {
-  const notify = (message: string) =>
-    toast(message + " 🦋", {
-      autoClose: 2000,
-      position: "bottom-right",
-
-      type: "success",
-      theme: "colored",
-    });
-
   useEffect(() => {
     type Handler = Parameters<typeof chrome.runtime.onMessage.addListener>[0];
 
-    const handler: Handler = (message) => {
-      notify(JSON.stringify(message));
+    const handler: Handler = (rawMessage) => {
+      const message = safeParse(MessageFromBackgroundSchema, rawMessage);
+      if (!message.success) {
+        return;
+      }
+
+      if (message.output.type === "detectTweet") {
+        toast(
+          () => (
+            <div>
+              <div>{"送信完了 🦋"}</div>
+              <pre>{message.output.value}</pre>
+            </div>
+          ),
+          {
+            ...defaultToastOptions,
+          },
+        );
+        return;
+      }
     };
 
     chrome.runtime.onMessage.addListener(handler);
-
     return () => {
       chrome.runtime.onMessage.removeListener(handler);
     };
