@@ -31,7 +31,7 @@ const ContentScriptUi: FC = () => {
         return;
       }
 
-      if (message.output.type === "detectTweet") {
+      if (message.output.type === "postToBluesky") {
         toast(
           () => (
             <div>

@@ -1,19 +1,44 @@
+import { BskyAgent, type AtpSessionData } from "@atproto/api";
+
+import { Storage } from "@plasmohq/storage";
+
+import { BLUESKY_SERVICE, STORAGE_API_KEYS } from "~constants";
 import type { MessageFromBackground } from "~types/MessageFromBackground";
 
 export {};
+
+let bskyAgent: BskyAgent | null = null;
 
 const getCurrentActiveTab = async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   return tab;
 };
 
-const sendMessage = async (message: unknown) => {
+const sendMessageToContentScript = async (message: unknown) => {
   const tab = await getCurrentActiveTab();
   if (!tab?.id) {
     return;
   }
 
   await chrome.tabs.sendMessage(tab.id, message);
+};
+
+const postToBluesky = async (text: string) => {
+  if (!bskyAgent) {
+    bskyAgent = new BskyAgent({ service: BLUESKY_SERVICE });
+
+    const session = await new Storage({ area: "local" }).get<AtpSessionData>(
+      STORAGE_API_KEYS.BLUESKY_SESSION,
+    );
+
+    if (!session) {
+      return;
+    }
+
+    await bskyAgent.resumeSession(session);
+  }
+
+  await bskyAgent.post({ text });
 };
 
 chrome.webRequest.onBeforeRequest.addListener(
@@ -48,19 +73,23 @@ chrome.webRequest.onBeforeRequest.addListener(
 
     console.log(details.url);
     console.log(details.method);
+    console.log(details);
     console.log(tweetText);
 
     if (!tweetText) {
       return;
     }
 
-    const message: MessageFromBackground = {
-      type: "detectTweet",
-      value: tweetText,
-    };
-    sendMessage(message).catch((e) => {
-      console.error(e);
-    });
+    postToBluesky(tweetText)
+      .then(async () => {
+        await sendMessageToContentScript({
+          type: "postToBluesky",
+          value: tweetText,
+        } satisfies MessageFromBackground).catch(() => null);
+      })
+      .catch(() => {
+        // TODO: error handling
+      });
   },
   {
     urls: ["https://twitter.com/i/api/*"],

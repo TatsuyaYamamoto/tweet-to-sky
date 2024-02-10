@@ -4,13 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Storage } from "@plasmohq/storage";
 import { useStorage } from "@plasmohq/storage/hook";
 
-import { STORAGE_API_KEYS } from "~constants";
+import { BLUESKY_SERVICE, STORAGE_API_KEYS } from "~constants";
 
 export type ProfileViewDetailed = Awaited<
   ReturnType<InstanceType<typeof BskyAgent>["getProfile"]>
 >["data"];
 
-export const useBlueskyApi = (service = "https://bsky.social") => {
+export const useBlueskyApi = () => {
   const bskyAgentRef = useRef<BskyAgent>();
   const [profile, setProfile] = useState<ProfileViewDetailed>();
   const [savedSession, saveSession, { remove: removeSession }] =
@@ -19,25 +19,22 @@ export const useBlueskyApi = (service = "https://bsky.social") => {
       instance: new Storage({ area: "local" }),
     });
 
-  const createBskyAgent = useCallback(
-    (service: string) => {
-      return new BskyAgent({
-        service,
-        persistSession: (event, data) => {
-          console.log("[bsky agent]", `session:${event}`, data);
+  const createBskyAgent = useCallback(() => {
+    return new BskyAgent({
+      service: BLUESKY_SERVICE,
+      persistSession: (event, data) => {
+        console.log("[bsky agent]", `session:${event}`, data);
 
-          if (event === "expired") {
-            removeSession();
-          }
-        },
-      });
-    },
-    [removeSession],
-  );
+        if (event === "expired") {
+          removeSession();
+        }
+      },
+    });
+  }, [removeSession]);
 
   const login = useCallback(
     async (identifier: string, password: string) => {
-      const agent = createBskyAgent(service);
+      const agent = createBskyAgent();
       bskyAgentRef.current = agent;
 
       await agent.login({ identifier, password });
@@ -56,7 +53,7 @@ export const useBlueskyApi = (service = "https://bsky.social") => {
       // save session to resume after next popup
       await saveSession(agent.session);
     },
-    [createBskyAgent, saveSession, service],
+    [createBskyAgent, saveSession],
   );
 
   const logout = useCallback(() => {
@@ -74,7 +71,7 @@ export const useBlueskyApi = (service = "https://bsky.social") => {
     if (savedSession) {
       // logging-out, but can try login with saved session
 
-      const newAgent = createBskyAgent(service);
+      const newAgent = createBskyAgent();
       bskyAgentRef.current = newAgent;
 
       void (async () => {
@@ -102,7 +99,7 @@ export const useBlueskyApi = (service = "https://bsky.social") => {
         }
       })();
     }
-  }, [createBskyAgent, service, logout, savedSession]);
+  }, [createBskyAgent, logout, savedSession]);
 
   return { login, logout, profile };
 };
