@@ -45,7 +45,7 @@
       "https://*/*"
     ],
     "permissions": [
-      "tabs"
+      "webRequest"
     ]
   }
 }

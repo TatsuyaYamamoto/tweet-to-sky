@@ -12,8 +12,8 @@ window.addEventListener("load", () => {
 });
 
 const ContentScriptUi: FC = () => {
-  const notify = () =>
-    toast(() => <div>{"送信完了 🦋"}</div>, {
+  const notify = (message: string) =>
+    toast(message + " 🦋", {
       autoClose: 2000,
       position: "bottom-right",
 
@@ -22,7 +22,17 @@ const ContentScriptUi: FC = () => {
     });
 
   useEffect(() => {
-    notify();
+    type Handler = Parameters<typeof chrome.runtime.onMessage.addListener>[0];
+
+    const handler: Handler = (message) => {
+      notify(JSON.stringify(message));
+    };
+
+    chrome.runtime.onMessage.addListener(handler);
+
+    return () => {
+      chrome.runtime.onMessage.removeListener(handler);
+    };
   }, []);
 
   return (
