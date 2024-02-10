@@ -4,7 +4,6 @@ import {
   Button,
   FormControl,
   FormErrorMessage,
-  FormLabel,
   Input,
   InputGroup,
   InputLeftElement,
@@ -15,12 +14,17 @@ import "react-hook-form";
 
 import { useForm } from "react-hook-form";
 
+import { useBlueskyApi } from "~hooks/useBlueskyApi";
+
 interface Inputs {
-  email: string;
+  identifier: string;
   password: string;
 }
 
 const PopupApp: FC = () => {
+  const { login, profile } = useBlueskyApi();
+  console.log("profile", profile);
+
   const {
     register,
     handleSubmit,
@@ -31,34 +35,33 @@ const PopupApp: FC = () => {
 
   const onSubmit = handleSubmit((data) => {
     console.log(data);
+    login(data.identifier, data.password);
   });
 
   return (
-    <Box padding={5} width={200}>
+    <Box padding={5} width={400}>
       <form onSubmit={onSubmit}>
-        <FormControl isInvalid={!!errors.email}>
-          <FormLabel>メールアドレス</FormLabel>
+        <FormControl isInvalid={!!errors.identifier}>
           <InputGroup>
             <InputLeftElement pointerEvents="none">
               <EmailIcon color="gray.300" />
             </InputLeftElement>
             <Input
-              placeholder="メールアドレスを入力してください"
-              {...register("email", { required: true })}
+              placeholder="ユーザー名またはメールアドレス"
+              {...register("identifier", { required: true })}
             />
           </InputGroup>
-          {errors.email && (
-            <FormErrorMessage>{errors.email.message}</FormErrorMessage>
+          {errors.identifier && (
+            <FormErrorMessage>{errors.identifier.message}</FormErrorMessage>
           )}
         </FormControl>
         <FormControl isInvalid={!!errors.password}>
-          <FormLabel>パスワード</FormLabel>
           <InputGroup>
             <InputLeftElement pointerEvents="none">
               <LockIcon color="gray.300" />
             </InputLeftElement>
             <Input
-              placeholder="パスワードを入力してください"
+              placeholder="パスワード"
               type="password"
               {...register("password", { required: true })}
             />
