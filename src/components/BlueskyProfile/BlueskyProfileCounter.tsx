@@ -7,7 +7,7 @@ interface ProfileCounterProps {
   handle: string;
 }
 
-const ProfileCounter: FC<ProfileCounterProps> = ({ count, unit, handle }) => {
+const BlueskyProfileCounter: FC<ProfileCounterProps> = ({ count, unit, handle }) => {
   return (
     <Box
       as="a"
@@ -29,4 +29,4 @@ const ProfileCounter: FC<ProfileCounterProps> = ({ count, unit, handle }) => {
   );
 };
 
-export default ProfileCounter;
+export default BlueskyProfileCounter;

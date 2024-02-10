@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Storage } from "@plasmohq/storage";
 import { useStorage } from "@plasmohq/storage/hook";
 
+import { STORAGE_API_KEYS } from "~constants";
+
 export type ProfileViewDetailed = Awaited<
   ReturnType<InstanceType<typeof BskyAgent>["getProfile"]>
 >["data"];
@@ -13,7 +15,7 @@ export const useBlueskyApi = (service = "https://bsky.social") => {
   const [profile, setProfile] = useState<ProfileViewDetailed>();
   const [savedSession, saveSession, { remove: removeSession }] =
     useStorage<AtpSessionData>({
-      key: "session",
+      key: STORAGE_API_KEYS.BLUESKY_SESSION,
       instance: new Storage({ area: "local" }),
     });
 

@@ -1,7 +1,7 @@
 import { Avatar, Box, Button } from "@chakra-ui/react";
 import { type FC } from "react";
 
-import ProfileCounter from "~components/Profile/ProfileCounter";
+import BlueskyProfileCounter from "~components/BlueskyProfile/BlueskyProfileCounter";
 import { type ProfileViewDetailed } from "~hooks/useBlueskyApi";
 
 interface ProfileProps {
@@ -9,9 +9,9 @@ interface ProfileProps {
   onRequestLogout: () => void;
 }
 
-const Profile: FC<ProfileProps> = ({ profile, onRequestLogout }) => {
+const BlueskyProfile: FC<ProfileProps> = ({ profile, onRequestLogout }) => {
   return (
-    <Box width="100%">
+    <Box width="100%" position="relative">
       <Box height={100}>
         <Box backgroundColor="rgb(0, 112, 255)" height="100%" />
       </Box>
@@ -41,17 +41,17 @@ const Profile: FC<ProfileProps> = ({ profile, onRequestLogout }) => {
           {`@${profile.handle}`}
         </Box>
         <Box display="flex" gap={4}>
-          <ProfileCounter
+          <BlueskyProfileCounter
             count={profile.followsCount ?? 0}
             unit={"follows"}
             handle={profile.handle}
           />
-          <ProfileCounter
+          <BlueskyProfileCounter
             count={profile.followersCount ?? 0}
             unit={"人をフォロー中"}
             handle={profile.handle}
           />
-          <ProfileCounter
+          <BlueskyProfileCounter
             count={profile.postsCount ?? 0}
             unit={"posts"}
             handle={profile.handle}
@@ -63,4 +63,4 @@ const Profile: FC<ProfileProps> = ({ profile, onRequestLogout }) => {
   );
 };
 
-export default Profile;
+export default BlueskyProfile;
