@@ -21,4 +21,18 @@ export default [
   reactRecommended,
   reactJsxRuntime,
   ...compat.extends("plugin:react-hooks/recommended"),
+
+  {
+    rules: {
+      // https://github.com/orgs/react-hook-form/discussions/9325#discussioncomment-4060566
+      "@typescript-eslint/no-misused-promises": [
+        2,
+        {
+          checksVoidReturn: {
+            attributes: false,
+          },
+        },
+      ],
+    },
+  },
 ];
