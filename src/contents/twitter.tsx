@@ -3,21 +3,14 @@ import createCache from "@emotion/cache";
 import { CacheProvider } from "@emotion/react";
 import reactToastifyStyle from "data-text:react-toastify/dist/ReactToastify.css";
 import type { PlasmoCSConfig, PlasmoGetStyle } from "plasmo";
-import { useEffect, useRef, type FC } from "react";
-import {
-  toast,
-  ToastContainer,
-  type Id as ToastId,
-  type ToastOptions,
-} from "react-toastify";
+import { useEffect, type FC } from "react";
+import { toast, ToastContainer, type ToastOptions } from "react-toastify";
 import { safeParse } from "valibot";
 
+import { sendRequestPostToBluesky } from "~background/messages/requestPostToBluesky";
 import AskPostToastContent from "~components/ToastContent/AskPostToastContent";
-import PostComplateToastContent from "~components/ToastContent/PostComplateToastContent";
-import {
-  MessageFromBackgroundSchema,
-  type MessageFromBackground,
-} from "~types/MessageFromBackground";
+import PostCompleteToastContent from "~components/ToastContent/PostComplateToastContent";
+import { MessageFromBackgroundSchema } from "~types/MessageFromBackground";
 
 export const config: PlasmoCSConfig = {
   matches: ["https://twitter.com/*"],
@@ -30,18 +23,11 @@ const defaultToastOptions: ToastOptions = {
   theme: "colored",
 };
 
-const sendMessageToBackground = async (message: unknown) => {
-  console.log(`[sendMessage:tab(-)->background]`, message);
-  return chrome.runtime.sendMessage(message);
-};
-
 type RuntimeMessageListener = Parameters<
   typeof chrome.runtime.onMessage.addListener
 >[0];
 
 const ContentScriptUi: FC = () => {
-  const tweetIdAndToastIdMapRef = useRef<Record<string, ToastId>>({});
-
   useEffect(() => {
     // chrome の(型の)バグ？ (https://zwzw.hatenablog.com/entry/2019/12/04/200000)
     // Promise ではなく true を返さないと sendResponse の内容が background で受信できない (https://developer.mozilla.org/ja/docs/Mozilla/Add-ons/WebExtensions/API/runtime/onMessage)
@@ -56,32 +42,22 @@ const ContentScriptUi: FC = () => {
 
       if (message.type === "askPostToBluesky") {
         const onRequestPost = () => {
-          sendMessageToBackground({
-            type: "requestPostToBluesky",
-            tweetId: message.tweetId,
-          } satisfies MessageFromBackground).catch((e) => console.error(e));
+          sendRequestPostToBluesky(message.tweetId)
+            .then(() => {
+              toast.update(toastId, {
+                render: () => <PostCompleteToastContent />,
+                ...defaultToastOptions,
+              });
+            })
+            .catch((e) => {
+              console.error(e);
+            });
         };
 
         const toastId = toast(
           () => <AskPostToastContent onRequestPost={onRequestPost} />,
           { ...defaultToastOptions },
         );
-        tweetIdAndToastIdMapRef.current[message.tweetId] = toastId;
-      }
-
-      if (message.type === "notifyPostResult") {
-        const toastId = tweetIdAndToastIdMapRef.current[message.tweetId];
-        delete tweetIdAndToastIdMapRef.current[message.tweetId];
-
-        if (!toastId) {
-          return;
-        }
-
-        toast.update(toastId, {
-          render: () => <PostComplateToastContent />,
-          ...defaultToastOptions,
-        });
-        return;
       }
     };
 

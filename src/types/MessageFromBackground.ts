@@ -8,14 +8,6 @@ export type AskPostToBlueskyMessage = Output<
   typeof AskPostToBlueskyMessageSchema
 >;
 
-export const RequestPostToBlueskyMessageSchema = object({
-  type: literal("requestPostToBluesky"),
-  tweetId: string(),
-});
-export type RequestPostToBlueskyMessage = Output<
-  typeof RequestPostToBlueskyMessageSchema
->;
-
 export const NotifyPostResultMessageSchema = object({
   type: literal("notifyPostResult"),
   tweetId: string(),
@@ -27,7 +19,6 @@ export type NotifyPostResultMessage = Output<
 
 export const MessageFromBackgroundSchema = union([
   AskPostToBlueskyMessageSchema,
-  RequestPostToBlueskyMessageSchema,
   NotifyPostResultMessageSchema,
 ]);
 
