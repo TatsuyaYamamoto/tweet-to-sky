@@ -9,8 +9,6 @@ import {
   InputLeftElement,
 } from "@chakra-ui/react";
 import { type FC } from "react";
-
-
 import { useForm } from "react-hook-form";
 
 export interface LoginInputs {
@@ -44,6 +42,7 @@ const LoginForm: FC<LoginFormProps> = ({ onRequestLogin }) => {
           </InputLeftElement>
           <Input
             placeholder="ユーザー名またはメールアドレス"
+            autoComplete="username"
             {...register("identifier", { required: true })}
           />
         </InputGroup>
@@ -59,6 +58,7 @@ const LoginForm: FC<LoginFormProps> = ({ onRequestLogin }) => {
           <Input
             placeholder="パスワード"
             type="password"
+            autoComplete="password"
             {...register("password", { required: true })}
           />
         </InputGroup>

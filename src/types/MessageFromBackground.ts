@@ -1,40 +1,34 @@
-import { array, literal, object, string, union, type Output } from "valibot";
+import { boolean, literal, object, string, union, type Output } from "valibot";
 
-export const PostToBlueskyMessageSchema = object({
-  type: literal("postToBluesky"),
-  value: string(),
+export const AskPostToBlueskyMessageSchema = object({
+  type: literal("askPostToBluesky"),
+  tweetId: string(),
 });
-
-export type DetectTweetMessage = Output<typeof PostToBlueskyMessageSchema>;
-
-export const RequestAccountListMessageSchema = object({
-  type: literal("requestAccountList"),
-});
-
-export type RequestAccountListMessage = Output<
-  typeof RequestAccountListMessageSchema
+export type AskPostToBlueskyMessage = Output<
+  typeof AskPostToBlueskyMessageSchema
 >;
 
-export const RequestAccountListResultMessageSchema = object({
-  type: literal("requestAccountListResult"),
-  value: object({
-    users: array(
-      object({
-        screen_name: string(),
-        user_id: string(),
-      }),
-    ),
-  }),
+export const RequestPostToBlueskyMessageSchema = object({
+  type: literal("requestPostToBluesky"),
+  tweetId: string(),
 });
+export type RequestPostToBlueskyMessage = Output<
+  typeof RequestPostToBlueskyMessageSchema
+>;
 
-export type RequestAccountListResultMessage = Output<
-  typeof RequestAccountListResultMessageSchema
+export const NotifyPostResultMessageSchema = object({
+  type: literal("notifyPostResult"),
+  tweetId: string(),
+  isSuccess: boolean(),
+});
+export type NotifyPostResultMessage = Output<
+  typeof NotifyPostResultMessageSchema
 >;
 
 export const MessageFromBackgroundSchema = union([
-  PostToBlueskyMessageSchema,
-  RequestAccountListMessageSchema,
-  RequestAccountListResultMessageSchema,
+  AskPostToBlueskyMessageSchema,
+  RequestPostToBlueskyMessageSchema,
+  NotifyPostResultMessageSchema,
 ]);
 
 export type MessageFromBackground = Output<typeof MessageFromBackgroundSchema>;

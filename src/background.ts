@@ -1,55 +1,22 @@
 import { BskyAgent, type AtpSessionData } from "@atproto/api";
-import { parse } from "valibot";
+import { safeParse } from "valibot";
 
 import { Storage } from "@plasmohq/storage";
 
+import { BLUESKY_SERVICE, STORAGE_API_KEYS } from "~constants";
 import {
-  BLUESKY_SERVICE,
-  RULE_IDS,
-  STORAGE_API_KEYS,
-  TWITTER_API_ACCOUNT_MULTI_LIST_JSON,
-} from "~constants";
-import {
-  RequestAccountListResultMessageSchema,
+  MessageFromBackgroundSchema,
   type MessageFromBackground,
-  type RequestAccountListMessage,
 } from "~types/MessageFromBackground";
-
-import RuleActionType = chrome.declarativeNetRequest.RuleActionType;
-import HeaderOperation = chrome.declarativeNetRequest.HeaderOperation;
 
 export {};
 
-const screenNameAndUserIdMap: Record<string, string> = {};
-
 let bskyAgent: BskyAgent | null = null;
+const tweetMap: Record<string, string> = {};
 
-// const getCurrentActiveTab = async () => {
-//   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-//   return tab;
-// };
-
-const sendMessageToContentScript = async (tabId: number, message: unknown) => {
+const sendMessageToTab = async (tabId: number, message: unknown) => {
+  console.log(`[sendMessage:background->tab(${tabId})]`, message);
   await chrome.tabs.sendMessage(tabId, message);
-};
-
-const requestAccountListToContentScript = async (tabId: number) => {
-  const message = {
-    type: "requestAccountList",
-  } satisfies RequestAccountListMessage;
-  const response: unknown = await chrome.tabs.sendMessage(tabId, message);
-  console.log("[message(response)]:content-script->background ", response);
-
-  parse(RequestAccountListResultMessageSchema, response).value.users.forEach(
-    (user) => {
-      screenNameAndUserIdMap[user.screen_name] = user.user_id;
-    },
-  );
-};
-
-const logDynamicRules = async () => {
-  const rules = await chrome.declarativeNetRequest.getDynamicRules();
-  console.log("[declarativeNetRequest] dynamicRules", rules);
 };
 
 const postToBluesky = async (text: string) => {
@@ -110,17 +77,15 @@ chrome.webRequest.onBeforeRequest.addListener(
       return;
     }
 
-    postToBluesky(tweetText)
-      .then(async () => {
-        await sendMessageToContentScript(tabId, {
-          type: "postToBluesky",
-          value: tweetText,
-        } satisfies MessageFromBackground).catch(() => null);
-      })
-      .catch((e) => {
-        // TODO: error handling
-        console.error(e);
-      });
+    const tweetId = crypto.randomUUID();
+    tweetMap[tweetId] = tweetText;
+
+    sendMessageToTab(tabId, {
+      type: "askPostToBluesky",
+      tweetId,
+    } satisfies MessageFromBackground).catch((e) => {
+      console.error(e);
+    });
   },
   {
     urls: ["https://twitter.com/i/api/*"],
@@ -129,66 +94,41 @@ chrome.webRequest.onBeforeRequest.addListener(
   ["requestBody"],
 );
 
-chrome.webRequest.onBeforeSendHeaders.addListener(
-  (details) => {
-    const { tabId, method, url, requestHeaders } = details;
-    console.log(`tab(${tabId}) -> `, method, url, requestHeaders);
+chrome.runtime.onMessage.addListener((rawMessage, sender) => {
+  const tabId = sender.tab?.id;
+  console.log(`[onMessage:tab(${tabId})->background]`, rawMessage);
 
-    if (!requestHeaders || method !== "GET") {
-      // preflight は以降の処理に使わない
-      return;
+  const { success, output: message } = safeParse(
+    MessageFromBackgroundSchema,
+    rawMessage,
+  );
+  if (!success) {
+    return;
+  }
+
+  if (message.type === "requestPostToBluesky") {
+    const tweetText = tweetMap[message.tweetId];
+    delete tweetMap[message.tweetId];
+    if (tweetText && tabId) {
+      postToBluesky(tweetText)
+        .then(() => {
+          return true;
+        })
+        .catch((e) => {
+          console.error(e);
+          return false;
+        })
+        .then((isSuccess) => {
+          return sendMessageToTab(tabId, {
+            type: "notifyPostResult",
+            tweetId: message.tweetId,
+            isSuccess,
+          } satisfies MessageFromBackground);
+        })
+        .catch((e) => {
+          console.error(e);
+        });
     }
-
-    const requiredHeaderNames = ["authorization", "x-csrf-token"];
-    const requestHeaderMap = Object.fromEntries(
-      requestHeaders.map(({ name, value }) => [name, value]),
-    );
-
-    chrome.declarativeNetRequest
-      .updateDynamicRules({
-        removeRuleIds: [RULE_IDS.ACCOUNT_LIST_HEADER],
-        addRules: [
-          {
-            action: {
-              type: RuleActionType.MODIFY_HEADERS,
-              requestHeaders: requiredHeaderNames.map((requiredHeaderName) => {
-                return {
-                  operation: HeaderOperation.SET,
-                  header: requiredHeaderName,
-                  value: requestHeaderMap[requiredHeaderName],
-                };
-              }),
-              responseHeaders: [
-                {
-                  operation: HeaderOperation.SET,
-                  header: "X-TWEET-TO-SKY-DYNAMIC-RULE-ID",
-                  value: `${RULE_IDS.ACCOUNT_LIST_HEADER}`,
-                },
-              ],
-            },
-            condition: {
-              urlFilter: TWITTER_API_ACCOUNT_MULTI_LIST_JSON,
-            },
-            id: RULE_IDS.ACCOUNT_LIST_HEADER,
-            priority: 1,
-          },
-        ],
-      })
-      .then(() => logDynamicRules())
-      .then(() => {
-        return requestAccountListToContentScript(tabId);
-      })
-      .catch((e) => console.error(e));
-  },
-  {
-    urls: [TWITTER_API_ACCOUNT_MULTI_LIST_JSON],
-  },
-  ["requestHeaders"],
-);
-
-chrome.declarativeNetRequest
-  .updateDynamicRules({
-    removeRuleIds: [RULE_IDS.ACCOUNT_LIST_HEADER],
-  })
-  .then(() => logDynamicRules())
-  .catch((e) => console.error(e));
+    return;
+  }
+});

@@ -1,13 +1,22 @@
+import { ChakraProvider } from "@chakra-ui/react";
+import createCache from "@emotion/cache";
+import { CacheProvider } from "@emotion/react";
 import reactToastifyStyle from "data-text:react-toastify/dist/ReactToastify.css";
 import type { PlasmoCSConfig, PlasmoGetStyle } from "plasmo";
-import { useEffect, type FC } from "react";
-import { toast, ToastContainer, type ToastOptions } from "react-toastify";
-import { parse, safeParse } from "valibot";
+import { useEffect, useRef, type FC } from "react";
+import {
+  toast,
+  ToastContainer,
+  type Id as ToastId,
+  type ToastOptions,
+} from "react-toastify";
+import { safeParse } from "valibot";
 
-import { TWITTER_API_ACCOUNT_MULTI_LIST_JSON } from "~constants";
+import AskPostToastContent from "~components/ToastContent/AskPostToastContent";
+import PostComplateToastContent from "~components/ToastContent/PostComplateToastContent";
 import {
   MessageFromBackgroundSchema,
-  RequestAccountListResultMessageSchema,
+  type MessageFromBackground,
 } from "~types/MessageFromBackground";
 
 export const config: PlasmoCSConfig = {
@@ -21,14 +30,23 @@ const defaultToastOptions: ToastOptions = {
   theme: "colored",
 };
 
-const ContentScriptUi: FC = () => {
-  useEffect(() => {
-    type Listener = Parameters<typeof chrome.runtime.onMessage.addListener>[0];
+const sendMessageToBackground = async (message: unknown) => {
+  console.log(`[sendMessage:tab(-)->background]`, message);
+  return chrome.runtime.sendMessage(message);
+};
 
+type RuntimeMessageListener = Parameters<
+  typeof chrome.runtime.onMessage.addListener
+>[0];
+
+const ContentScriptUi: FC = () => {
+  const tweetIdAndToastIdMapRef = useRef<Record<string, ToastId>>({});
+
+  useEffect(() => {
     // chrome の(型の)バグ？ (https://zwzw.hatenablog.com/entry/2019/12/04/200000)
     // Promise ではなく true を返さないと sendResponse の内容が background で受信できない (https://developer.mozilla.org/ja/docs/Mozilla/Add-ons/WebExtensions/API/runtime/onMessage)
-    const handler: Listener = (rawMessage, _, sendResponse): void | boolean => {
-      console.log("[onMessage:background->content-script]", rawMessage);
+    const lister: RuntimeMessageListener = (rawMessage): true | void => {
+      console.log("[onMessage:background->tab(-)]", rawMessage);
 
       const parseResult = safeParse(MessageFromBackgroundSchema, rawMessage);
       if (!parseResult.success) {
@@ -36,68 +54,66 @@ const ContentScriptUi: FC = () => {
       }
       const message = parseResult.output;
 
-      if (message.type === "postToBluesky") {
-        toast(
-          () => (
-            <div>
-              <div>{"送信完了 🦋"}</div>
-              <pre>{message.value}</pre>
-            </div>
-          ),
-          {
-            ...defaultToastOptions,
-          },
+      if (message.type === "askPostToBluesky") {
+        const onRequestPost = () => {
+          sendMessageToBackground({
+            type: "requestPostToBluesky",
+            tweetId: message.tweetId,
+          } satisfies MessageFromBackground).catch((e) => console.error(e));
+        };
+
+        const toastId = toast(
+          () => <AskPostToastContent onRequestPost={onRequestPost} />,
+          { ...defaultToastOptions },
         );
-        return;
+        tweetIdAndToastIdMapRef.current[message.tweetId] = toastId;
       }
 
-      if (message.type === "requestAccountList") {
-        fetch(`${TWITTER_API_ACCOUNT_MULTI_LIST_JSON}?sw=1`, {
-          credentials: "include",
-        })
-          .then((res) => res.json() as Promise<unknown>)
-          .then((list) => {
-            console.log(list);
+      if (message.type === "notifyPostResult") {
+        const toastId = tweetIdAndToastIdMapRef.current[message.tweetId];
+        delete tweetIdAndToastIdMapRef.current[message.tweetId];
 
-            const response = parse(RequestAccountListResultMessageSchema, {
-              type: "requestAccountListResult",
-              value: list,
-            });
+        if (!toastId) {
+          return;
+        }
 
-            sendResponse(response);
-            console.log(
-              "[onMessage(response):content-script->background]",
-              response,
-            );
-          })
-          .catch((e) => console.error(e));
-
-        return true;
+        toast.update(toastId, {
+          render: () => <PostComplateToastContent />,
+          ...defaultToastOptions,
+        });
+        return;
       }
     };
 
-    chrome.runtime.onMessage.addListener(handler);
+    chrome.runtime.onMessage.addListener(lister);
     return () => {
-      chrome.runtime.onMessage.removeListener(handler);
+      chrome.runtime.onMessage.removeListener(lister);
     };
   }, []);
 
   return (
-    <>
-      <ToastContainer />
-    </>
+    <CacheProvider value={styleCache}>
+      <ChakraProvider>
+        <ToastContainer />
+      </ChakraProvider>
+    </CacheProvider>
   );
 };
 
-export const getStyle: PlasmoGetStyle = () => {
-  const style = document.createElement("style");
-  style.textContent = `
-  ${reactToastifyStyle.replace(":root", ":host")}
-  :host {
+const styleElement = document.createElement("style");
+
+const styleCache = createCache({
+  key: "plasmo-emotion-cache",
+  prepend: true,
+  container: styleElement,
+});
+styleCache.sheet.insert(reactToastifyStyle.replace(":root", ":host"));
+styleCache.sheet.insert(`
+:host {
     --toastify-color-success: rgb(0, 112, 255);
   }
-  `;
-  return style;
-};
+`);
+
+export const getStyle: PlasmoGetStyle = () => styleElement;
 
 export default ContentScriptUi;
