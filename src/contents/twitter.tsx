@@ -2,17 +2,17 @@ import reactToastifyStyle from "data-text:react-toastify/dist/ReactToastify.css"
 import type { PlasmoCSConfig, PlasmoGetStyle } from "plasmo";
 import { useEffect, type FC } from "react";
 import { toast, ToastContainer, type ToastOptions } from "react-toastify";
-import { safeParse } from "valibot";
+import { parse, safeParse } from "valibot";
 
-import { MessageFromBackgroundSchema } from "~types/MessageFromBackground";
+import { TWITTER_API_ACCOUNT_MULTI_LIST_JSON } from "~constants";
+import {
+  MessageFromBackgroundSchema,
+  RequestAccountListResultMessageSchema,
+} from "~types/MessageFromBackground";
 
 export const config: PlasmoCSConfig = {
   matches: ["https://twitter.com/*"],
 };
-
-window.addEventListener("load", () => {
-  console.log("content script loaded 🦋");
-});
 
 const defaultToastOptions: ToastOptions = {
   autoClose: 2000,
@@ -23,20 +23,25 @@ const defaultToastOptions: ToastOptions = {
 
 const ContentScriptUi: FC = () => {
   useEffect(() => {
-    type Handler = Parameters<typeof chrome.runtime.onMessage.addListener>[0];
+    type Listener = Parameters<typeof chrome.runtime.onMessage.addListener>[0];
 
-    const handler: Handler = (rawMessage) => {
-      const message = safeParse(MessageFromBackgroundSchema, rawMessage);
-      if (!message.success) {
+    // chrome の(型の)バグ？ (https://zwzw.hatenablog.com/entry/2019/12/04/200000)
+    // Promise ではなく true を返さないと sendResponse の内容が background で受信できない (https://developer.mozilla.org/ja/docs/Mozilla/Add-ons/WebExtensions/API/runtime/onMessage)
+    const handler: Listener = (rawMessage, _, sendResponse): void | boolean => {
+      console.log("[onMessage:background->content-script]", rawMessage);
+
+      const parseResult = safeParse(MessageFromBackgroundSchema, rawMessage);
+      if (!parseResult.success) {
         return;
       }
+      const message = parseResult.output;
 
-      if (message.output.type === "postToBluesky") {
+      if (message.type === "postToBluesky") {
         toast(
           () => (
             <div>
               <div>{"送信完了 🦋"}</div>
-              <pre>{message.output.value}</pre>
+              <pre>{message.value}</pre>
             </div>
           ),
           {
@@ -44,6 +49,30 @@ const ContentScriptUi: FC = () => {
           },
         );
         return;
+      }
+
+      if (message.type === "requestAccountList") {
+        fetch(`${TWITTER_API_ACCOUNT_MULTI_LIST_JSON}?sw=1`, {
+          credentials: "include",
+        })
+          .then((res) => res.json() as Promise<unknown>)
+          .then((list) => {
+            console.log(list);
+
+            const response = parse(RequestAccountListResultMessageSchema, {
+              type: "requestAccountListResult",
+              value: list,
+            });
+
+            sendResponse(response);
+            console.log(
+              "[onMessage(response):content-script->background]",
+              response,
+            );
+          })
+          .catch((e) => console.error(e));
+
+        return true;
       }
     };
 

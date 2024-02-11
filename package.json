@@ -46,7 +46,8 @@
       "https://*/*"
     ],
     "permissions": [
-      "webRequest"
+      "webRequest",
+      "declarativeNetRequest"
     ]
   }
 }
