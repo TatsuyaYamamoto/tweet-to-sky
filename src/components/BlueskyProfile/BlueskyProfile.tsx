@@ -7,9 +7,14 @@ import type { ProfileViewDetailed } from "~helpers/bluesky";
 interface ProfileProps {
   profile: ProfileViewDetailed;
   onRequestLogout: () => void;
+  onRequestOpenBluesky: () => void;
 }
 
-const BlueskyProfile: FC<ProfileProps> = ({ profile, onRequestLogout }) => {
+const BlueskyProfile: FC<ProfileProps> = ({
+  profile,
+  onRequestLogout,
+  onRequestOpenBluesky,
+}) => {
   return (
     <Box width="100%" position="relative">
       <Box height={100}>
@@ -17,7 +22,7 @@ const BlueskyProfile: FC<ProfileProps> = ({ profile, onRequestLogout }) => {
       </Box>
       <Box paddingTop={4} paddingBottom={2} paddingX={7}>
         <Box display="flex" justifyContent="flex-end" gap={2}>
-          <Button size="sm" borderRadius={1000}>
+          <Button size="sm" borderRadius={1000} onClick={onRequestOpenBluesky}>
             {`Bluesky を表示する`}
           </Button>
           <Button size="sm" borderRadius={1000} onClick={onRequestLogout}>

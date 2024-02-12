@@ -16,11 +16,21 @@ const PopupApp: FC = () => {
     await logout();
   };
 
+  const onRequestOpenBluesky = () => {
+    return chrome.tabs.create({
+      url: `https://bsky.app/profile/${profile?.handle}`,
+    });
+  };
+
   return (
     <Box width={400} padding={2}>
       <Box width="100%" boxShadow="base" padding={2}>
         {profile ? (
-          <BlueskyProfile profile={profile} onRequestLogout={onRequestLogout} />
+          <BlueskyProfile
+            profile={profile}
+            onRequestLogout={onRequestLogout}
+            onRequestOpenBluesky={onRequestOpenBluesky}
+          />
         ) : (
           <LoginForm onRequestLogin={onRequestLogin} />
         )}
