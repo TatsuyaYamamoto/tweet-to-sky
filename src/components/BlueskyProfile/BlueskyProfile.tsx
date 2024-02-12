@@ -2,7 +2,7 @@ import { Avatar, Box, Button } from "@chakra-ui/react";
 import { type FC } from "react";
 
 import BlueskyProfileCounter from "~components/BlueskyProfile/BlueskyProfileCounter";
-import { type ProfileViewDetailed } from "~hooks/useBlueskyApi";
+import type { ProfileViewDetailed } from "~helpers/bluesky";
 
 interface ProfileProps {
   profile: ProfileViewDetailed;

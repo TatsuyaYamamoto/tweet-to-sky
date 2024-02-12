@@ -3,17 +3,17 @@ import { type FC } from "react";
 
 import BlueskyProfile from "~components/BlueskyProfile/BlueskyProfile";
 import LoginForm, { type LoginInputs } from "~components/LoginForm";
-import { useBlueskyApi } from "~hooks/useBlueskyApi";
+import { useBluesky } from "~hooks/useBluesky";
 
 const PopupApp: FC = () => {
-  const { profile, login, logout } = useBlueskyApi();
+  const { profile, login, logout } = useBluesky();
 
   const onRequestLogin = async (inputs: LoginInputs) => {
     await login(inputs.identifier, inputs.password);
   };
 
-  const onRequestLogout = () => {
-    logout();
+  const onRequestLogout = async () => {
+    await logout();
   };
 
   return (

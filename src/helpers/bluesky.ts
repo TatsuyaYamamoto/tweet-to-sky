@@ -1,27 +1,69 @@
-import { BskyAgent, type AtpSessionData } from "@atproto/api";
+import { BskyAgent } from "@atproto/api";
 
-import { Storage } from "@plasmohq/storage";
+import { BLUESKY_SERVICE } from "~constants";
+import {
+  getBskySession,
+  removeBskyProfile,
+  removeBskySession,
+  saveBskyProfile,
+  saveBskySession,
+} from "~helpers/storage";
 
-import { BLUESKY_SERVICE, STORAGE_API_KEYS } from "~constants";
-
-export {};
+export type ProfileViewDetailed = Awaited<
+  ReturnType<InstanceType<typeof BskyAgent>["getProfile"]>
+>["data"];
 
 let bskyAgent: BskyAgent | null = null;
 
+const createBskyAgent = () => {
+  return new BskyAgent({
+    service: BLUESKY_SERVICE,
+    persistSession: async (event, data) => {
+      console.log("[bsky agent]", `session:${event}`, data);
+
+      if (event === "expired") {
+        await removeBskySession();
+      }
+    },
+  });
+};
+
+export const loginToBluesky = async (identifier: string, password: string) => {
+  bskyAgent = createBskyAgent();
+  const { data } = await bskyAgent.login({ identifier, password });
+
+  if (!bskyAgent.session) {
+    bskyAgent = null;
+    throw new Error(
+      "login to bluesky was successful, but the agent has no session",
+    );
+  }
+
+  const { data: profile } = await bskyAgent.getProfile({ actor: data.did });
+
+  await Promise.all([
+    saveBskySession(bskyAgent.session),
+    saveBskyProfile(profile),
+  ]);
+
+  return profile;
+};
+
+export const logoutFromBluesky = async () => {
+  bskyAgent = null;
+
+  await Promise.all([removeBskySession(), removeBskyProfile()]);
+};
+
 export const postToBluesky = async (text: string) => {
   if (!bskyAgent) {
-    bskyAgent = new BskyAgent({ service: BLUESKY_SERVICE });
-
-    const session = await new Storage({ area: "local" }).get<AtpSessionData>(
-      STORAGE_API_KEYS.BLUESKY_SESSION,
-    );
-
+    const session = await getBskySession();
     if (!session) {
       return;
     }
-
+    bskyAgent = createBskyAgent();
     await bskyAgent.resumeSession(session);
   }
 
-  await bskyAgent.post({ text });
+  return bskyAgent.post({ text });
 };
