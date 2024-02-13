@@ -5,12 +5,11 @@ import reactToastifyStyle from "data-text:react-toastify/dist/ReactToastify.css"
 import type { PlasmoCSConfig, PlasmoGetStyle } from "plasmo";
 import { useEffect, type FC } from "react";
 import { toast, ToastContainer, type ToastOptions } from "react-toastify";
-import { safeParse } from "valibot";
 
 import { sendRequestPostToBluesky } from "~background/messages/requestPostToBluesky";
 import AskPostToastContent from "~components/ToastContent/AskPostToastContent";
 import PostCompleteToastContent from "~components/ToastContent/PostComplateToastContent";
-import { MessageFromBackgroundSchema } from "~types/MessageFromBackground";
+import { onAskPostToBlueskyMessage } from "~contents/messages/askPostToBluesky";
 
 export const config: PlasmoCSConfig = {
   matches: ["https://twitter.com/*"],
@@ -23,47 +22,30 @@ const defaultToastOptions: ToastOptions = {
   theme: "colored",
 };
 
-type RuntimeMessageListener = Parameters<
-  typeof chrome.runtime.onMessage.addListener
->[0];
-
 const ContentScriptUi: FC = () => {
   useEffect(() => {
-    // chrome の(型の)バグ？ (https://zwzw.hatenablog.com/entry/2019/12/04/200000)
-    // Promise ではなく true を返さないと sendResponse の内容が background で受信できない (https://developer.mozilla.org/ja/docs/Mozilla/Add-ons/WebExtensions/API/runtime/onMessage)
-    const lister: RuntimeMessageListener = (rawMessage): true | void => {
-      console.log("[onMessage:background->tab(-)]", rawMessage);
-
-      const parseResult = safeParse(MessageFromBackgroundSchema, rawMessage);
-      if (!parseResult.success) {
-        return;
-      }
-      const message = parseResult.output;
-
-      if (message.type === "askPostToBluesky") {
-        const onRequestPost = () => {
-          sendRequestPostToBluesky(message.tweetId)
-            .then(() => {
-              toast.update(toastId, {
-                render: () => <PostCompleteToastContent />,
-                ...defaultToastOptions,
-              });
-            })
-            .catch((e) => {
-              console.error(e);
+    const unsubscribe = onAskPostToBlueskyMessage((message) => {
+      const onRequestPost = () => {
+        sendRequestPostToBluesky(message.tweetId)
+          .then(() => {
+            toast.update(toastId, {
+              render: () => <PostCompleteToastContent />,
+              ...defaultToastOptions,
             });
-        };
+          })
+          .catch((e) => {
+            console.error(e);
+          });
+      };
 
-        const toastId = toast(
-          () => <AskPostToastContent onRequestPost={onRequestPost} />,
-          { ...defaultToastOptions },
-        );
-      }
-    };
+      const toastId = toast(
+        () => <AskPostToastContent onRequestPost={onRequestPost} />,
+        { ...defaultToastOptions },
+      );
+    });
 
-    chrome.runtime.onMessage.addListener(lister);
     return () => {
-      chrome.runtime.onMessage.removeListener(lister);
+      unsubscribe();
     };
   }, []);
 
