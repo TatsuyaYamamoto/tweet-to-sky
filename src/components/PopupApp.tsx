@@ -24,7 +24,7 @@ const PopupApp: FC = () => {
 
   return (
     <Box width={400} padding={2}>
-      <Box width="100%" boxShadow="base" padding={2}>
+      <Box width="100%" boxShadow="base" borderRadius="md" overflow="hidden">
         {profile ? (
           <BlueskyProfile
             profile={profile}
