@@ -1,8 +1,8 @@
 import { ChakraProvider } from "@chakra-ui/react";
 
-import PopApp from "~/components/PopupApp";
+import PopApp from "~components/PopupApp";
 
-function IndexPopup() {
+function PopupIndex() {
   return (
     <ChakraProvider>
       <PopApp />
@@ -10,4 +10,4 @@ function IndexPopup() {
   );
 }
 
-export default IndexPopup;
+export default PopupIndex;
