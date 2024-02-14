@@ -1,6 +1,8 @@
 import { saveTweetText } from "~helpers/twitter";
 import { type MessageFromBackground } from "~types/MessageFromBackground";
 
+import "./syncToIcon";
+
 export {};
 
 const sendMessageToTab = async (tabId: number, message: unknown) => {
