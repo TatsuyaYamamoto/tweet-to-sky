@@ -13,8 +13,9 @@ chrome.webRequest.onBeforeRequest.addListener(
     const { tabId, method, url, requestBody } = details;
 
     // 2024/02/09: `https://twitter.com/i/api/graphql/8ED1SMuUGkOZVBEjiYUTfw/CreateTweet`
+    // 2024/02/15: `https://twitter.com/i/api/graphql/_BCvBRcat20zPDIAxmH5ag/CreateTweet`
     const tweetApiPattern = new RegExp(
-      "https://twitter\\.com/i/api/graphql/[0-9a-zA-Z]+/CreateTweet",
+      "https://twitter\\.com/i/api/graphql/[^/]+/CreateTweet",
     );
 
     if (!(method === "POST" && tweetApiPattern.test(url))) {
