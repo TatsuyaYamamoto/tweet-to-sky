@@ -6,7 +6,7 @@ import type { PlasmoCSConfig, PlasmoGetStyle } from "plasmo";
 import { useEffect, type FC } from "react";
 import { toast, ToastContainer, type ToastOptions } from "react-toastify";
 
-import { sendRequestPostToBluesky } from "~background/messages/requestPostToBluesky";
+import { sendPostToBluesky } from "~background/messages/postToBluesky";
 import AskPostToastContent from "~components/ToastContent/AskPostToastContent";
 import PostCompleteToastContent from "~components/ToastContent/PostComplateToastContent";
 import { onAskPostToBlueskyMessage } from "~contents/messages/askPostToBluesky";
@@ -29,7 +29,7 @@ const ContentScriptUi: FC = () => {
         toast.update(toastId, { autoClose: false });
 
         try {
-          await sendRequestPostToBluesky(tweetId);
+          await sendPostToBluesky(tweetId);
           toast.update(toastId, {
             render: () => <PostCompleteToastContent />,
             ...defaultToastOptions,

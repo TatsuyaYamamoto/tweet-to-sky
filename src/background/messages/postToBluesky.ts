@@ -3,18 +3,18 @@ import { sendToBackground, type PlasmoMessaging } from "@plasmohq/messaging";
 import { postToBluesky } from "~helpers/bluesky";
 import { restoreTweetText } from "~helpers/twitter";
 
-interface RequestPostToBlueskyBody {
+interface PostToBlueskyBody {
   tweetId: string;
 }
 
-interface RequestPostToBlueskyResponse {
+interface PostToBlueskyResponse {
   tweetId: string;
   isSuccess: boolean;
 }
 
 const handler: PlasmoMessaging.MessageHandler<
-  RequestPostToBlueskyBody,
-  RequestPostToBlueskyResponse
+  PostToBlueskyBody,
+  PostToBlueskyResponse
 > = async (req, res) => {
   console.log(`[messaging:tab(${req.sender?.tab?.id})->background]`, req);
 
@@ -45,15 +45,12 @@ const handler: PlasmoMessaging.MessageHandler<
 
 export default handler;
 
-export const sendRequestPostToBluesky = (tweetId: string) => {
+export const sendPostToBluesky = (tweetId: string) => {
   const body = { tweetId };
 
   console.log(`[messaging:tab(-)->background]`, body);
-  return sendToBackground<
-    RequestPostToBlueskyBody,
-    RequestPostToBlueskyResponse
-  >({
-    name: "requestPostToBluesky",
+  return sendToBackground<PostToBlueskyBody, PostToBlueskyResponse>({
+    name: "postToBluesky",
     body,
   });
 };
