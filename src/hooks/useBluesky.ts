@@ -16,7 +16,7 @@ export const useBluesky = () => {
     instance: localAreaStorage,
   });
 
-  const login = useCallback(async (identifier: string, password: string) => {
+  const login = useCallback((identifier: string, password: string) => {
     return sendLoginToBluesky({ identifier, password });
   }, []);
 

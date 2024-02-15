@@ -9,7 +9,7 @@ const PopupApp: FC = () => {
   const { profile, login, logout } = useBluesky();
 
   const onRequestLogin = async (inputs: LoginInputs) => {
-    await login(inputs.identifier, inputs.password);
+    return login(inputs.identifier, inputs.password);
   };
 
   const onRequestLogout = async () => {

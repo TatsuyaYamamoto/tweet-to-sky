@@ -26,9 +26,13 @@ const handler: PlasmoMessaging.MessageHandler<
     return;
   }
 
-  const profile = await loginToBluesky(identifier, password);
-
-  res.send({ isSuccess: true, profile });
+  try {
+    const profile = await loginToBluesky(identifier, password);
+    res.send({ isSuccess: true, profile });
+  } catch (e) {
+    console.error(e);
+    res.send({ isSuccess: false });
+  }
 };
 
 export default handler;
