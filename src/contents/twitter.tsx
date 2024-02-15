@@ -16,31 +16,38 @@ export const config: PlasmoCSConfig = {
 };
 
 const defaultToastOptions: ToastOptions = {
-  autoClose: 2000,
   position: "bottom-right",
   type: "success",
   theme: "colored",
+  icon: false,
 };
 
 const ContentScriptUi: FC = () => {
   useEffect(() => {
-    const unsubscribe = onAskPostToBlueskyMessage((message) => {
-      const onRequestPost = () => {
-        sendRequestPostToBluesky(message.tweetId)
-          .then(() => {
-            toast.update(toastId, {
-              render: () => <PostCompleteToastContent />,
-              ...defaultToastOptions,
-            });
-          })
-          .catch((e) => {
-            console.error(e);
+    const unsubscribe = onAskPostToBlueskyMessage(({ tweetId, tweetText }) => {
+      const onRequestPost = async () => {
+        toast.update(toastId, { autoClose: false });
+
+        try {
+          await sendRequestPostToBluesky(tweetId);
+          toast.update(toastId, {
+            render: () => <PostCompleteToastContent />,
+            ...defaultToastOptions,
+            autoClose: 1000,
           });
+        } catch (e) {
+          console.error(e);
+        }
       };
 
       const toastId = toast(
-        () => <AskPostToastContent onRequestPost={onRequestPost} />,
-        { ...defaultToastOptions },
+        () => (
+          <AskPostToastContent
+            tweetText={tweetText}
+            onRequestPost={onRequestPost}
+          />
+        ),
+        { ...defaultToastOptions, autoClose: 2000 },
       );
     });
 
