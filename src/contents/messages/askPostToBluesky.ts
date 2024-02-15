@@ -11,6 +11,7 @@ type RuntimeMessageListener = (
 export const AskPostToBlueskyMessageSchema = z.object({
   type: z.literal("askPostToBluesky"),
   tweetId: z.string(),
+  tweetText: z.string(),
 });
 export type AskPostToBlueskyMessage = z.infer<
   typeof AskPostToBlueskyMessageSchema

@@ -1,5 +1,13 @@
+import { z } from "zod";
+
 import type { AskPostToBlueskyMessage } from "~contents/messages/askPostToBluesky";
 import { saveTweetText } from "~helpers/twitter";
+
+export const CreateTweetApiResponseSchema = z.object({
+  variables: z.object({
+    tweet_text: z.string(),
+  }),
+});
 
 const sendMessageToTab = async (tabId: number, message: unknown) => {
   console.log(`[sendMessage:background->tab(${tabId})]`, message);
@@ -29,19 +37,11 @@ chrome.webRequest.onBeforeRequest.addListener(
     const json = JSON.parse(
       new TextDecoder("utf-8").decode(requestBodyByte),
     ) as unknown;
-    const tweetText =
-      typeof json === "object" &&
-      json !== null &&
-      "variables" in json &&
-      typeof json.variables === "object" &&
-      json.variables !== null &&
-      "tweet_text" in json.variables &&
-      typeof json.variables.tweet_text === "string" &&
-      json.variables.tweet_text;
+    const {
+      variables: { tweet_text: tweetText },
+    } = CreateTweetApiResponseSchema.parse(json);
 
-    console.log(url);
-    console.log(method);
-    console.log(tweetText);
+    console.log(`${method} ${url}`, tweetText);
 
     if (!tweetText) {
       return;
@@ -52,6 +52,7 @@ chrome.webRequest.onBeforeRequest.addListener(
     sendMessageToTab(tabId, {
       type: "askPostToBluesky",
       tweetId,
+      tweetText,
     } satisfies AskPostToBlueskyMessage).catch((e) => {
       console.error(e);
     });
