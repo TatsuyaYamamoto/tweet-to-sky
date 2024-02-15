@@ -3,12 +3,12 @@
   "displayName": "Tweet to sky",
   "description": "when you tweet, you also post to bluesky",
   "manifest": {
+    "homepage_url": "https://t28.dev",
     "host_permissions": [
-      "https://*/*"
+      "https://twitter.com/*"
     ],
     "permissions": [
-      "webRequest",
-      "declarativeNetRequest"
+      "webRequest"
     ]
   },
   "version": "0.0.1",
