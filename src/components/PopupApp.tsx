@@ -1,5 +1,6 @@
-import { Box } from "@chakra-ui/react";
+import { Box, Image as ChakraImage } from "@chakra-ui/react";
 import { type FC } from "react";
+import offIconPath from "url:../../assets/icon-off@128x128.png";
 
 import BlueskyProfile from "~components/BlueskyProfile/BlueskyProfile";
 import LoginForm, { type LoginInputs } from "~components/LoginForm";
@@ -32,7 +33,12 @@ const PopupApp: FC = () => {
             onRequestOpenBluesky={onRequestOpenBluesky}
           />
         ) : (
-          <LoginForm onRequestLogin={onRequestLogin} />
+          <>
+            <Box display="flex" justifyContent="center">
+              <ChakraImage width={16} src={offIconPath} />
+            </Box>
+            <LoginForm onRequestLogin={onRequestLogin} />
+          </>
         )}
       </Box>
     </Box>
