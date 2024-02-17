@@ -12,7 +12,10 @@ const handler: PlasmoMessaging.MessageHandler<
   RequestBody,
   ResponseBody
 > = async (req, res) => {
-  console.log(`[messaging:tab(${req.sender?.tab?.id})->background]`, req);
+  console.log(
+    `[onMessage:logoutFromBluesky] tab(${req.sender?.tab?.id})->background`,
+    "***",
+  );
 
   await logoutFromBluesky();
 
@@ -21,10 +24,13 @@ const handler: PlasmoMessaging.MessageHandler<
 
 export default handler;
 
-export const sendLogoutFromBluesky = (body: RequestBody = {}) => {
-  console.log(`[messaging:tab(-)->background]`, body);
-  return sendToBackground<RequestBody, ResponseBody>({
+export const sendLogoutFromBluesky = async (body: RequestBody = {}) => {
+  console.log(`[messaging:logoutFronBluesky] tab(-)->background`, "***");
+  const res = await sendToBackground<RequestBody, ResponseBody>({
     name: "logoutFronBluesky",
     body,
   });
+  console.log(`[messaging:logoutFronBluesky] tab(-)<-background`, "***");
+
+  return res;
 };

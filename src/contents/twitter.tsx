@@ -9,7 +9,7 @@ import { toast, ToastContainer, type ToastOptions } from "react-toastify";
 import { sendPostToBluesky } from "~background/messages/postToBluesky";
 import AskPostToastContent from "~components/ToastContent/AskPostToastContent";
 import PostCompleteToastContent from "~components/ToastContent/PostComplateToastContent";
-import { onAskPostToBlueskyMessage } from "~contents/messages/askPostToBluesky";
+import { onAskPostToBluesky } from "~contents/messages/askPostToBluesky";
 
 const defaultToastOptions: ToastOptions = {
   position: "bottom-right",
@@ -42,7 +42,7 @@ export const getStyle: PlasmoGetStyle = () => {
 
 const ContentScriptUi: FC<PlasmoCSUIProps> = () => {
   useEffect(() => {
-    const unsubscribe = onAskPostToBlueskyMessage(({ tweetId, tweetText }) => {
+    const unsubscribe = onAskPostToBluesky(({ tweetId, tweetText }) => {
       const onRequestPost = async () => {
         toast.update(toastId, { autoClose: false });
 

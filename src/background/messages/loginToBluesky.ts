@@ -18,7 +18,10 @@ const handler: PlasmoMessaging.MessageHandler<
   RequestBody,
   ResponseBody
 > = async (req, res) => {
-  console.log(`[messaging:tab(${req.sender?.tab?.id})->background]`, req);
+  console.log(
+    `[onMessage:loginToBluesky] tab(${req.sender?.tab?.id})->background`,
+    "***",
+  );
 
   const { identifier, password } = req.body ?? {};
   if (!identifier || !password) {
@@ -37,10 +40,13 @@ const handler: PlasmoMessaging.MessageHandler<
 
 export default handler;
 
-export const sendLoginToBluesky = (body: RequestBody) => {
-  console.log(`[messaging:tab(-)->background]`, body);
-  return sendToBackground<RequestBody, ResponseBody>({
+export const sendLoginToBluesky = async (body: RequestBody) => {
+  console.log(`[messaging:loginToBluesky] tab(-)->background`, "***");
+  const res = await sendToBackground<RequestBody, ResponseBody>({
     name: "loginToBluesky",
     body,
   });
+  console.log(`[messaging:loginToBluesky] tab(-)<-background`, "***");
+
+  return res;
 };

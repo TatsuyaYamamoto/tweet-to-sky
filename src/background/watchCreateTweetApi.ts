@@ -9,11 +9,6 @@ export const CreateTweetApiResponseSchema = z.object({
   }),
 });
 
-const sendMessageToTab = async (tabId: number, message: unknown) => {
-  console.log(`[sendMessage:background->tab(${tabId})]`, message);
-  await chrome.tabs.sendMessage(tabId, message);
-};
-
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
     const { tabId, method, url, requestBody } = details;
@@ -49,11 +44,16 @@ chrome.webRequest.onBeforeRequest.addListener(
 
     const tweetId = saveTweetText(tweetText);
 
-    sendMessageToTab(tabId, {
+    const message = {
       type: "askPostToBluesky",
       tweetId,
       tweetText,
-    } satisfies AskPostToBlueskyMessage).catch((e) => {
+    } satisfies AskPostToBlueskyMessage;
+    console.log(
+      `[messaging:askPostToBluesky] background->tab(${tabId})`,
+      message,
+    );
+    chrome.tabs.sendMessage(tabId, message).catch((e) => {
       console.error(e);
     });
   },

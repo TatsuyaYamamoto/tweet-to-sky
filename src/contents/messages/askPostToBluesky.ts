@@ -17,16 +17,17 @@ export type AskPostToBlueskyMessage = z.infer<
   typeof AskPostToBlueskyMessageSchema
 >;
 
-export const onAskPostToBlueskyMessage = (
+export const onAskPostToBluesky = (
   callback: (message: AskPostToBlueskyMessage) => void,
 ) => {
   const lister: RuntimeMessageListener = (rawMessage): true | void => {
+    console.log("[onMessage:askPostToBluesky] background->tab(-)", rawMessage);
+
     const parseResult = AskPostToBlueskyMessageSchema.safeParse(rawMessage);
     if (!parseResult.success) {
       return;
     }
 
-    console.log("[onMessage:background->tab(-)]", rawMessage);
     callback(parseResult.data);
   };
 

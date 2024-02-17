@@ -12,11 +12,14 @@ interface PostToBlueskyResponse {
   isSuccess: boolean;
 }
 
-const handler: PlasmoMessaging.MessageHandler<
+const onPostToBluesky: PlasmoMessaging.MessageHandler<
   PostToBlueskyBody,
   PostToBlueskyResponse
 > = async (req, res) => {
-  console.log(`[messaging:tab(${req.sender?.tab?.id})->background]`, req);
+  console.log(
+    `[onMessage:postToBluesky] tab(${req.sender?.tab?.id})->background`,
+    req,
+  );
 
   const tweetId = req.body?.tweetId;
   if (!tweetId) {
@@ -43,14 +46,17 @@ const handler: PlasmoMessaging.MessageHandler<
   });
 };
 
-export default handler;
+export default onPostToBluesky;
 
-export const sendPostToBluesky = (tweetId: string) => {
+export const sendPostToBluesky = async (tweetId: string) => {
   const body = { tweetId };
 
-  console.log(`[messaging:tab(-)->background]`, body);
-  return sendToBackground<PostToBlueskyBody, PostToBlueskyResponse>({
+  console.log(`[messaging:postToBlueskytab] tab(-)->background`, body);
+  const res = await sendToBackground<PostToBlueskyBody, PostToBlueskyResponse>({
     name: "postToBluesky",
     body,
   });
+  console.log(`[messaging:postToBlueskytab] tab(-)<-background`, res);
+
+  return res;
 };
