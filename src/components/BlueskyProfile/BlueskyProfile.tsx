@@ -64,12 +64,12 @@ const BlueskyProfile: FC<ProfileProps> = ({
         </Box>
         <Box display="flex" gap={4}>
           <BlueskyProfileCounter
-            count={profile.followsCount ?? 0}
-            unit={"follows"}
+            count={profile.followersCount ?? 0}
+            unit={"followers"}
             handle={profile.handle}
           />
           <BlueskyProfileCounter
-            count={profile.followersCount ?? 0}
+            count={profile.followsCount ?? 0}
             unit={"人をフォロー中"}
             handle={profile.handle}
           />
