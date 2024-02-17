@@ -65,7 +65,7 @@ const ContentScriptUi: FC<PlasmoCSUIProps> = () => {
             onRequestPost={onRequestPost}
           />
         ),
-        { ...defaultToastOptions, autoClose: 2000 },
+        { ...defaultToastOptions, autoClose: 4000 },
       );
     });
 
