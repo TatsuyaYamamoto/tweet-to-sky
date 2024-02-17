@@ -1,8 +1,8 @@
 import { ChakraProvider } from "@chakra-ui/react";
 import createCache from "@emotion/cache";
-import { CacheProvider } from "@emotion/react";
+import { CacheProvider, css, Global } from "@emotion/react";
 import reactToastifyStyle from "data-text:react-toastify/dist/ReactToastify.css";
-import type { PlasmoCSConfig, PlasmoGetStyle } from "plasmo";
+import type { PlasmoCSConfig, PlasmoCSUIProps, PlasmoGetStyle } from "plasmo";
 import { useEffect, type FC } from "react";
 import { toast, ToastContainer, type ToastOptions } from "react-toastify";
 
@@ -11,10 +11,6 @@ import AskPostToastContent from "~components/ToastContent/AskPostToastContent";
 import PostCompleteToastContent from "~components/ToastContent/PostComplateToastContent";
 import { onAskPostToBlueskyMessage } from "~contents/messages/askPostToBluesky";
 
-export const config: PlasmoCSConfig = {
-  matches: ["https://twitter.com/*"],
-};
-
 const defaultToastOptions: ToastOptions = {
   position: "bottom-right",
   type: "success",
@@ -22,7 +18,29 @@ const defaultToastOptions: ToastOptions = {
   icon: false,
 };
 
-const ContentScriptUi: FC = () => {
+const styleElement = document.createElement("style");
+
+const styleCache = createCache({
+  key: "plasmo-emotion-cache",
+  container: styleElement,
+});
+
+const globalStyles = css`
+  ${reactToastifyStyle.replace(":root", ":host")}
+  :host {
+    --toastify-color-success: rgb(0, 112, 255);
+  }
+`;
+
+export const config: PlasmoCSConfig = {
+  matches: ["https://twitter.com/*"],
+};
+
+export const getStyle: PlasmoGetStyle = () => {
+  return styleElement;
+};
+
+const ContentScriptUi: FC<PlasmoCSUIProps> = () => {
   useEffect(() => {
     const unsubscribe = onAskPostToBlueskyMessage(({ tweetId, tweetText }) => {
       const onRequestPost = async () => {
@@ -58,27 +76,12 @@ const ContentScriptUi: FC = () => {
 
   return (
     <CacheProvider value={styleCache}>
+      <Global styles={globalStyles} />
       <ChakraProvider>
         <ToastContainer />
       </ChakraProvider>
     </CacheProvider>
   );
 };
-
-const styleElement = document.createElement("style");
-
-const styleCache = createCache({
-  key: "plasmo-emotion-cache",
-  prepend: true,
-  container: styleElement,
-});
-styleCache.sheet.insert(reactToastifyStyle.replace(":root", ":host"));
-styleCache.sheet.insert(`
-:host {
-    --toastify-color-success: rgb(0, 112, 255);
-  }
-`);
-
-export const getStyle: PlasmoGetStyle = () => styleElement;
 
 export default ContentScriptUi;
