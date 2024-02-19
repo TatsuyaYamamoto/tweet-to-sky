@@ -4,16 +4,19 @@ import { CacheProvider, css, Global } from "@emotion/react";
 import reactToastifyStyle from "data-text:react-toastify/dist/ReactToastify.css";
 import type { PlasmoCSConfig, PlasmoCSUIProps, PlasmoGetStyle } from "plasmo";
 import { useEffect, type FC } from "react";
-import { toast, ToastContainer, type ToastOptions } from "react-toastify";
+import {
+  toast,
+  ToastContainer,
+  type ToastOptions,
+  type UpdateOptions,
+} from "react-toastify";
 
 import { sendPostToBluesky } from "~background/messages/postToBluesky";
 import AskPostToastContent from "~components/ToastContent/AskPostToastContent";
-import PostCompleteToastContent from "~components/ToastContent/PostComplateToastContent";
 import { onAskPostToBluesky } from "~contents/messages/askPostToBluesky";
 
 const defaultToastOptions: ToastOptions = {
   position: "bottom-right",
-  type: "success",
   theme: "colored",
   icon: false,
 };
@@ -46,18 +49,29 @@ const ContentScriptUi: FC<PlasmoCSUIProps> = () => {
       const onRequestPost = async () => {
         toast.update(toastId, { autoClose: false });
 
-        try {
-          await sendPostToBluesky(tweetId);
-          toast.update(toastId, {
-            render: () => <PostCompleteToastContent />,
-            ...defaultToastOptions,
-            autoClose: 1000,
-          });
-        } catch (e) {
-          console.error(e);
-        }
+        const response = await sendPostToBluesky(tweetId).catch((e) => ({
+          isSuccess: false,
+          errorMessage: e instanceof Error ? e.message : "error",
+        }));
+
+        const toastOptions: UpdateOptions = {
+          ...defaultToastOptions,
+          ...(response.isSuccess
+            ? {
+                render: () => "送信完了 🦋",
+                type: "success",
+                autoClose: 1000,
+              }
+            : {
+                render: () => response.errorMessage,
+                type: "error",
+                autoClose: false,
+              }),
+        };
+        toast.update(toastId, toastOptions);
       };
 
+      toast.dismiss(); // clear all
       const toastId = toast(
         () => (
           <AskPostToastContent
@@ -65,7 +79,11 @@ const ContentScriptUi: FC<PlasmoCSUIProps> = () => {
             onRequestPost={onRequestPost}
           />
         ),
-        { ...defaultToastOptions, autoClose: 4000 },
+        {
+          ...defaultToastOptions,
+          type: "success",
+          autoClose: false,
+        },
       );
     });
 
@@ -78,7 +96,7 @@ const ContentScriptUi: FC<PlasmoCSUIProps> = () => {
     <CacheProvider value={styleCache}>
       <Global styles={globalStyles} />
       <ChakraProvider>
-        <ToastContainer />
+        <ToastContainer limit={1} />
       </ChakraProvider>
     </CacheProvider>
   );

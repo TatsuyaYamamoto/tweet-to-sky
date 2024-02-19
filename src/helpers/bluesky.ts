@@ -22,7 +22,7 @@ const createBskyAgent = () => {
       console.log("[bsky agent]", `session:${event}`, data);
 
       if (event === "expired") {
-        await removeBskySession();
+        await logoutFromBluesky();
       }
     },
   });
@@ -59,7 +59,7 @@ export const postToBluesky = async (text: string) => {
   if (!bskyAgent) {
     const session = await getBskySession();
     if (!session) {
-      return;
+      throw new Error("no session data is in storage.");
     }
     bskyAgent = createBskyAgent();
     await bskyAgent.resumeSession(session);

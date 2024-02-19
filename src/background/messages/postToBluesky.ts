@@ -7,10 +7,15 @@ interface PostToBlueskyBody {
   tweetId: string;
 }
 
-interface PostToBlueskyResponse {
-  tweetId: string;
-  isSuccess: boolean;
-}
+type PostToBlueskyResponse =
+  | {
+      isSuccess: true;
+      tweetId: string;
+    }
+  | {
+      isSuccess: false;
+      errorMessage: string;
+    };
 
 const onPostToBluesky: PlasmoMessaging.MessageHandler<
   PostToBlueskyBody,
@@ -31,19 +36,14 @@ const onPostToBluesky: PlasmoMessaging.MessageHandler<
     return;
   }
 
-  const isSuccess = await postToBluesky(tweetText)
-    .then(() => {
-      return true;
-    })
-    .catch((e) => {
-      console.error(e);
-      return false;
-    });
-
-  res.send({
-    tweetId,
-    isSuccess,
-  });
+  try {
+    await postToBluesky(tweetText);
+    return res.send({ isSuccess: true, tweetId });
+  } catch (e) {
+    console.error(e);
+    const errorMessage = e instanceof Error ? e.message : "unknown error";
+    return res.send({ isSuccess: false, errorMessage });
+  }
 };
 
 export default onPostToBluesky;
