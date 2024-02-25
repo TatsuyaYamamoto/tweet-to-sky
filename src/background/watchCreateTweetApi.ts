@@ -6,6 +6,13 @@ import { saveTweetText } from "~helpers/twitter";
 export const CreateTweetApiResponseSchema = z.object({
   variables: z.object({
     tweet_text: z.string(),
+    media: z.object({
+      media_entities: z
+        .object({
+          media_id: z.string(),
+        })
+        .array(),
+    }),
   }),
 });
 
@@ -33,14 +40,14 @@ chrome.webRequest.onBeforeRequest.addListener(
       new TextDecoder("utf-8").decode(requestBodyByte),
     ) as unknown;
     const {
-      variables: { tweet_text: tweetText },
+      variables: {
+        tweet_text: tweetText,
+        media: { media_entities },
+      },
     } = CreateTweetApiResponseSchema.parse(json);
+    const mediaIds = media_entities.map(({ media_id }) => media_id);
 
     console.log(`${method} ${url}`, tweetText);
-
-    if (!tweetText) {
-      return;
-    }
 
     const tweetId = saveTweetText(tweetText);
 
@@ -48,6 +55,7 @@ chrome.webRequest.onBeforeRequest.addListener(
       type: "askPostToBluesky",
       tweetId,
       tweetText,
+      mediaIds,
     } satisfies AskPostToBlueskyMessage;
     console.log(
       `[messaging:askPostToBluesky] background->tab(${tabId})`,

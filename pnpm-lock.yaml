@@ -32,6 +32,9 @@ dependencies:
   framer-motion:
     specifier: 11.0.3
     version: 11.0.3(react-dom@18.2.0)(react@18.2.0)
+  js-md5:
+    specifier: 0.8.3
+    version: 0.8.3
   plasmo:
     specifier: 0.84.2
     version: 0.84.2(react-dom@18.2.0)(react@18.2.0)
@@ -6273,6 +6276,10 @@ packages:
   /joycon@3.1.1:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==}
     engines: {node: '>=10'}
+    dev: false
+
+  /js-md5@0.8.3:
+    resolution: {integrity: sha512-qR0HB5uP6wCuRMrWPTrkMaev7MJZwJuuw4fnwAzRgP4J4/F8RwtodOKpGp4XpqsLBFzzgqIO42efFAyz2Et6KQ==}
     dev: false
 
   /js-tokens@4.0.0:

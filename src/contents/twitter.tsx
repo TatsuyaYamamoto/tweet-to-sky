@@ -13,7 +13,9 @@ import {
 
 import { sendPostToBluesky } from "~background/messages/postToBluesky";
 import AskPostToastContent from "~components/ToastContent/AskPostToastContent";
+import { useEnsureMedia } from "~contents/hooks/useEnsureMedia";
 import { onAskPostToBluesky } from "~contents/messages/askPostToBluesky";
+import { arrayBufferToBase64 } from "~helpers/utils";
 
 const defaultToastOptions: ToastOptions = {
   position: "bottom-right",
@@ -44,12 +46,40 @@ export const getStyle: PlasmoGetStyle = () => {
 };
 
 const ContentScriptUi: FC<PlasmoCSUIProps> = () => {
+  const { getEnsuredMediaEntries, clearEnsuredMedia } = useEnsureMedia();
+
   useEffect(() => {
-    const unsubscribe = onAskPostToBluesky(({ tweetId, tweetText }) => {
+    const handler: Parameters<typeof onAskPostToBluesky>[0] = ({
+      tweetId,
+      tweetText,
+      mediaIds: tweetMediaIds,
+    }) => {
       const onRequestPost = async () => {
         toast.update(toastId, { autoClose: false });
 
-        const response = await sendPostToBluesky(tweetId).catch((e) => ({
+        const postTargetMedias = getEnsuredMediaEntries().flatMap(
+          ([ensuredMediaId, ensuredMedia]) => {
+            if (!tweetMediaIds.includes(ensuredMediaId)) {
+              return [];
+            }
+
+            const { alt, arrayBuffer, mediaType } = ensuredMedia;
+            return [
+              {
+                mediaId: ensuredMediaId,
+                alt,
+                base64: arrayBufferToBase64(arrayBuffer),
+                mediaType,
+              },
+            ];
+          },
+        );
+        clearEnsuredMedia();
+
+        const response = await sendPostToBluesky(
+          tweetId,
+          postTargetMedias,
+        ).catch((e) => ({
           isSuccess: false,
           errorMessage: e instanceof Error ? e.message : "error",
         }));
@@ -85,12 +115,13 @@ const ContentScriptUi: FC<PlasmoCSUIProps> = () => {
           autoClose: false,
         },
       );
-    });
+    };
 
+    const unsubscribe = onAskPostToBluesky(handler);
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [getEnsuredMediaEntries, clearEnsuredMedia]);
 
   return (
     <CacheProvider value={styleCache}>

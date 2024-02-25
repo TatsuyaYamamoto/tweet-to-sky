@@ -1,4 +1,4 @@
-import { BskyAgent } from "@atproto/api";
+import { AppBskyEmbedImages, BskyAgent } from "@atproto/api";
 
 import { BLUESKY_SERVICE } from "~constants";
 import {
@@ -8,10 +8,21 @@ import {
   saveBskyProfile,
   saveBskySession,
 } from "~helpers/storage";
+import { base64ToBinary } from "~helpers/utils";
 
 export type ProfileViewDetailed = Awaited<
   ReturnType<InstanceType<typeof BskyAgent>["getProfile"]>
 >["data"];
+
+// chrome の(型の)バグ？ (https://zwzw.hatenablog.com/entry/2019/12/04/200000)
+// Promise ではなく true を返さないと sendResponse の内容が background で受信できない (https://developer.mozilla.org/ja/docs/Mozilla/Add-ons/WebExtensions/API/runtime/onMessage)
+export type RuntimeMessageListener = (
+  ...args: Parameters<
+    Parameters<typeof chrome.runtime.onMessage.addListener>[0]
+  >
+) => true | void;
+
+type PostRecord = Parameters<InstanceType<typeof BskyAgent>["post"]>[0];
 
 let bskyAgent: BskyAgent | null = null;
 
@@ -55,7 +66,18 @@ export const logoutFromBluesky = async () => {
   await Promise.all([removeBskySession(), removeBskyProfile()]);
 };
 
-export const postToBluesky = async (text: string) => {
+export interface BlueskyEmbedImage {
+  alt: string;
+  base64: string;
+  mediaType: string;
+}
+
+export const postToBluesky = async (
+  text: string,
+  embed?: {
+    images?: BlueskyEmbedImage[] | undefined;
+  },
+) => {
   if (!bskyAgent) {
     const session = await getBskySession();
     if (!session) {
@@ -65,5 +87,31 @@ export const postToBluesky = async (text: string) => {
     await bskyAgent.resumeSession(session);
   }
 
-  return bskyAgent.post({ text });
+  const uploadedImages: AppBskyEmbedImages.Image[] = [];
+  if (embed?.images) {
+    await Promise.all(
+      embed?.images?.map(async ({ alt, base64, mediaType }) => {
+        const result = await bskyAgent?.uploadBlob(base64ToBinary(base64), {
+          encoding: mediaType,
+        });
+        if (result) {
+          uploadedImages.push({
+            alt,
+            image: result.data.blob,
+          });
+        }
+      }),
+    );
+  }
+
+  const postRecord: PostRecord = { text };
+
+  if (0 < uploadedImages.length) {
+    postRecord.embed = {
+      $type: "app.bsky.embed.images",
+      images: uploadedImages,
+    };
+  }
+
+  return bskyAgent.post(postRecord);
 };

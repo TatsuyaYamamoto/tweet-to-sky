@@ -1,10 +1,11 @@
 import { sendToBackground, type PlasmoMessaging } from "@plasmohq/messaging";
 
-import { postToBluesky } from "~helpers/bluesky";
+import { postToBluesky, type BlueskyEmbedImage } from "~helpers/bluesky";
 import { restoreTweetText } from "~helpers/twitter";
 
 interface PostToBlueskyBody {
   tweetId: string;
+  images?: BlueskyEmbedImage[];
 }
 
 type PostToBlueskyResponse =
@@ -21,42 +22,47 @@ const onPostToBluesky: PlasmoMessaging.MessageHandler<
   PostToBlueskyBody,
   PostToBlueskyResponse
 > = async (req, res) => {
-  console.log(
-    `[onMessage:postToBluesky] tab(${req.sender?.tab?.id})->background`,
-    req,
-  );
+  const logPrefix = `[onMessage:postToBluesky]`;
+  console.log(`${logPrefix} tab(${req.sender?.tab?.id})->background`, req);
 
-  const tweetId = req.body?.tweetId;
-  if (!tweetId) {
+  if (!req.body) {
+    console.error(`${logPrefix} no body is received.`);
     return;
   }
 
+  const { tweetId, images } = req.body;
+
   const tweetText = restoreTweetText(tweetId);
   if (!tweetText) {
+    console.error(`${logPrefix} tweet text (id: ${tweetId}) is not stored.`);
     return;
   }
 
   try {
-    await postToBluesky(tweetText);
-    return res.send({ isSuccess: true, tweetId });
+    await postToBluesky(tweetText, { images });
+    res.send({ isSuccess: true, tweetId });
   } catch (e) {
-    console.error(e);
     const errorMessage = e instanceof Error ? e.message : "unknown error";
-    return res.send({ isSuccess: false, errorMessage });
+    console.error(`${logPrefix} ${errorMessage}`);
+    res.send({ isSuccess: false, errorMessage });
   }
 };
 
 export default onPostToBluesky;
 
-export const sendPostToBluesky = async (tweetId: string) => {
-  const body = { tweetId };
+export const sendPostToBluesky = async (
+  tweetId: string,
+  images: BlueskyEmbedImage[],
+) => {
+  const logPrefix = `[messaging:postToBlueskytab]`;
+  const body = { tweetId, images };
 
-  console.log(`[messaging:postToBlueskytab] tab(-)->background`, body);
+  console.log(`${logPrefix} tab(-)->background`, body);
   const res = await sendToBackground<PostToBlueskyBody, PostToBlueskyResponse>({
     name: "postToBluesky",
     body,
   });
-  console.log(`[messaging:postToBlueskytab] tab(-)<-background`, res);
+  console.log(`${logPrefix} tab(-)<-background`, res);
 
   return res;
 };
