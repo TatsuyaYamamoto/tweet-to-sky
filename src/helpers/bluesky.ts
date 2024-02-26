@@ -1,4 +1,4 @@
-import { AppBskyEmbedImages, BskyAgent } from "@atproto/api";
+import { AppBskyEmbedImages, BskyAgent, RichText } from "@atproto/api";
 
 import { BLUESKY_SERVICE } from "~constants";
 import {
@@ -87,8 +87,16 @@ export const postToBluesky = async (
     await bskyAgent.resumeSession(session);
   }
 
-  const uploadedImages: AppBskyEmbedImages.Image[] = [];
+  const postRecord: PostRecord = { text };
+
+  const richText = new RichText({ text });
+  await richText.detectFacets(bskyAgent);
+  if (richText.facets) {
+    postRecord.facets = richText.facets;
+  }
+
   if (embed?.images) {
+    const uploadedImages: AppBskyEmbedImages.Image[] = [];
     await Promise.all(
       embed?.images?.map(async ({ alt, base64, mediaType }) => {
         const result = await bskyAgent?.uploadBlob(base64ToBinary(base64), {
@@ -102,11 +110,7 @@ export const postToBluesky = async (
         }
       }),
     );
-  }
 
-  const postRecord: PostRecord = { text };
-
-  if (0 < uploadedImages.length) {
     postRecord.embed = {
       $type: "app.bsky.embed.images",
       images: uploadedImages,
