@@ -1,4 +1,10 @@
-import { AppBskyEmbedImages, BskyAgent, RichText } from "@atproto/api";
+import {
+  AppBskyEmbedExternal,
+  AppBskyEmbedImages,
+  AppBskyRichtextFacet,
+  BskyAgent,
+  RichText,
+} from "@atproto/api";
 
 import { BLUESKY_SERVICE } from "~constants";
 import {
@@ -8,6 +14,7 @@ import {
   saveBskyProfile,
   saveBskySession,
 } from "~helpers/storage";
+import { getPreview } from "~helpers/twitter";
 import { base64ToBinary } from "~helpers/utils";
 
 export type ProfileViewDetailed = Awaited<
@@ -115,6 +122,46 @@ export const postToBluesky = async (
       $type: "app.bsky.embed.images",
       images: uploadedImages,
     };
+  } else {
+    const links = richText.facets?.flatMap((facet) => {
+      return facet.features.filter(AppBskyRichtextFacet.isLink);
+    });
+    const [firstLink] = links ?? [];
+
+    if (firstLink) {
+      const preview = getPreview(firstLink.uri);
+
+      if (preview) {
+        const external: AppBskyEmbedExternal.External = {
+          uri: firstLink.uri,
+          title: preview.title,
+          description: preview.description,
+        };
+
+        if (preview.imageUrl) {
+          const [contentType, arrayBuffer] = await fetch(preview.imageUrl).then(
+            async (res) => {
+              return [
+                res.headers.get("Content-Type"),
+                await res.arrayBuffer(),
+              ] as const;
+            },
+          );
+          const result = await bskyAgent.uploadBlob(
+            new Uint8Array(arrayBuffer),
+            {
+              encoding: contentType ?? "image/jpg",
+            },
+          );
+          external.thumb = result.data.blob;
+        }
+
+        postRecord.embed = {
+          $type: "app.bsky.embed.external",
+          external,
+        };
+      }
+    }
   }
 
   return bskyAgent.post(postRecord);
