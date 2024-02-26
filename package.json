@@ -1,6 +1,6 @@
 {
   "name": "tweet-to-sky",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "displayName": "Tweet to sky",
   "description": "when you tweet, you also post to bluesky",
   "manifest": {
