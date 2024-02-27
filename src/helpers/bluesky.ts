@@ -1,4 +1,10 @@
-import { AppBskyEmbedImages, BskyAgent, RichText } from "@atproto/api";
+import {
+  AppBskyEmbedExternal,
+  AppBskyEmbedImages,
+  AppBskyRichtextFacet,
+  BskyAgent,
+  RichText,
+} from "@atproto/api";
 
 import { BLUESKY_SERVICE } from "~constants";
 import {
@@ -8,6 +14,7 @@ import {
   saveBskyProfile,
   saveBskySession,
 } from "~helpers/storage";
+import { getPreview } from "~helpers/twitter";
 import { base64ToBinary } from "~helpers/utils";
 
 export type ProfileViewDetailed = Awaited<
@@ -66,6 +73,18 @@ export const logoutFromBluesky = async () => {
   await Promise.all([removeBskySession(), removeBskyProfile()]);
 };
 
+const createPostRecord = async (bskyAgent: BskyAgent, text: string) => {
+  const postRecord: PostRecord = { text };
+
+  const richText = new RichText({ text });
+  await richText.detectFacets(bskyAgent);
+  if (richText.facets) {
+    postRecord.facets = richText.facets;
+  }
+
+  return postRecord;
+};
+
 export interface BlueskyEmbedImage {
   alt: string;
   base64: string;
@@ -74,9 +93,7 @@ export interface BlueskyEmbedImage {
 
 export const postToBluesky = async (
   text: string,
-  embed?: {
-    images?: BlueskyEmbedImage[] | undefined;
-  },
+  images?: BlueskyEmbedImage[] | undefined,
 ) => {
   if (!bskyAgent) {
     const session = await getBskySession();
@@ -87,34 +104,66 @@ export const postToBluesky = async (
     await bskyAgent.resumeSession(session);
   }
 
-  const postRecord: PostRecord = { text };
+  const postRecord = await createPostRecord(bskyAgent, text);
 
-  const richText = new RichText({ text });
-  await richText.detectFacets(bskyAgent);
-  if (richText.facets) {
-    postRecord.facets = richText.facets;
-  }
-
-  if (embed?.images) {
+  if (images && 1 <= images.length) {
     const uploadedImages: AppBskyEmbedImages.Image[] = [];
-    await Promise.all(
-      embed?.images?.map(async ({ alt, base64, mediaType }) => {
-        const result = await bskyAgent?.uploadBlob(base64ToBinary(base64), {
-          encoding: mediaType,
-        });
-        if (result) {
-          uploadedImages.push({
-            alt,
-            image: result.data.blob,
-          });
-        }
-      }),
-    );
+
+    const promises = images.map(async ({ alt, mediaType, base64 }) => {
+      const result = await bskyAgent?.uploadBlob(base64ToBinary(base64), {
+        encoding: mediaType,
+      });
+      if (result?.success) {
+        const image = result.data.blob;
+        uploadedImages.push({ alt, image });
+      }
+    });
+    await Promise.all(promises);
 
     postRecord.embed = {
       $type: "app.bsky.embed.images",
       images: uploadedImages,
     };
+  } else {
+    const links = postRecord.facets?.flatMap((facet) => {
+      return facet.features.filter(AppBskyRichtextFacet.isLink);
+    });
+    const [firstLink] = links ?? [];
+
+    if (firstLink) {
+      const preview = getPreview(firstLink.uri);
+
+      if (preview) {
+        const external: AppBskyEmbedExternal.External = {
+          uri: firstLink.uri,
+          title: preview.title,
+          description: preview.description,
+        };
+
+        if (preview.imageUrl) {
+          const [contentType, arrayBuffer] = await fetch(preview.imageUrl).then(
+            async (res) => {
+              return [
+                res.headers.get("Content-Type"),
+                await res.arrayBuffer(),
+              ] as const;
+            },
+          );
+          const result = await bskyAgent.uploadBlob(
+            new Uint8Array(arrayBuffer),
+            {
+              encoding: contentType ?? "image/jpg",
+            },
+          );
+          external.thumb = result.data.blob;
+        }
+
+        postRecord.embed = {
+          $type: "app.bsky.embed.external",
+          external,
+        };
+      }
+    }
   }
 
   return bskyAgent.post(postRecord);

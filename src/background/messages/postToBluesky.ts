@@ -39,7 +39,7 @@ const onPostToBluesky: PlasmoMessaging.MessageHandler<
   }
 
   try {
-    await postToBluesky(tweetText, { images });
+    await postToBluesky(tweetText, images);
     res.send({ isSuccess: true, tweetId });
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : "unknown error";
