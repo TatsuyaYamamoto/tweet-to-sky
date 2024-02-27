@@ -34,6 +34,7 @@ chrome.webRequest.onSendHeaders.addListener(
     const { method, url: rawUrl, requestHeaders, initiator } = details;
 
     if (!initiator?.startsWith("https://twitter.com")) {
+      // API Calling in this lister should be ignored
       return;
     }
 
