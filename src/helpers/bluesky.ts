@@ -108,7 +108,7 @@ export const postToBluesky = async (
 
   const postRecord = await createPostRecord(bskyAgent, text);
 
-  if (embed?.images) {
+  if (embed?.images && 1 <= embed.images.length) {
     const uploadedImages: AppBskyEmbedImages.Image[] = [];
 
     const promises = embed.images.map(async ({ alt, mediaType, base64 }) => {
