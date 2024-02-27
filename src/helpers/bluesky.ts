@@ -73,6 +73,18 @@ export const logoutFromBluesky = async () => {
   await Promise.all([removeBskySession(), removeBskyProfile()]);
 };
 
+const createPostRecord = async (bskyAgent: BskyAgent, text: string) => {
+  const postRecord: PostRecord = { text };
+
+  const richText = new RichText({ text });
+  await richText.detectFacets(bskyAgent);
+  if (richText.facets) {
+    postRecord.facets = richText.facets;
+  }
+
+  return postRecord;
+};
+
 export interface BlueskyEmbedImage {
   alt: string;
   base64: string;
@@ -94,36 +106,28 @@ export const postToBluesky = async (
     await bskyAgent.resumeSession(session);
   }
 
-  const postRecord: PostRecord = { text };
-
-  const richText = new RichText({ text });
-  await richText.detectFacets(bskyAgent);
-  if (richText.facets) {
-    postRecord.facets = richText.facets;
-  }
+  const postRecord = await createPostRecord(bskyAgent, text);
 
   if (embed?.images) {
     const uploadedImages: AppBskyEmbedImages.Image[] = [];
-    await Promise.all(
-      embed?.images?.map(async ({ alt, base64, mediaType }) => {
-        const result = await bskyAgent?.uploadBlob(base64ToBinary(base64), {
-          encoding: mediaType,
-        });
-        if (result) {
-          uploadedImages.push({
-            alt,
-            image: result.data.blob,
-          });
-        }
-      }),
-    );
+
+    const promises = embed.images.map(async ({ alt, mediaType, base64 }) => {
+      const result = await bskyAgent?.uploadBlob(base64ToBinary(base64), {
+        encoding: mediaType,
+      });
+      if (result?.success) {
+        const image = result.data.blob;
+        uploadedImages.push({ alt, image });
+      }
+    });
+    await Promise.all(promises);
 
     postRecord.embed = {
       $type: "app.bsky.embed.images",
       images: uploadedImages,
     };
   } else {
-    const links = richText.facets?.flatMap((facet) => {
+    const links = postRecord.facets?.flatMap((facet) => {
       return facet.features.filter(AppBskyRichtextFacet.isLink);
     });
     const [firstLink] = links ?? [];
