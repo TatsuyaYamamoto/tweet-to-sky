@@ -93,9 +93,7 @@ export interface BlueskyEmbedImage {
 
 export const postToBluesky = async (
   text: string,
-  embed?: {
-    images?: BlueskyEmbedImage[] | undefined;
-  },
+  images?: BlueskyEmbedImage[] | undefined,
 ) => {
   if (!bskyAgent) {
     const session = await getBskySession();
@@ -108,10 +106,10 @@ export const postToBluesky = async (
 
   const postRecord = await createPostRecord(bskyAgent, text);
 
-  if (embed?.images && 1 <= embed.images.length) {
+  if (images && 1 <= images.length) {
     const uploadedImages: AppBskyEmbedImages.Image[] = [];
 
-    const promises = embed.images.map(async ({ alt, mediaType, base64 }) => {
+    const promises = images.map(async ({ alt, mediaType, base64 }) => {
       const result = await bskyAgent?.uploadBlob(base64ToBinary(base64), {
         encoding: mediaType,
       });
