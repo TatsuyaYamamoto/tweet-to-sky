@@ -4,7 +4,9 @@ import {
   AppBskyRichtextFacet,
   BskyAgent,
   RichText,
+  type AtpPersistSessionHandler,
 } from "@atproto/api";
+import { jwtDecode } from "jwt-decode";
 
 import { BLUESKY_SERVICE } from "~constants";
 import {
@@ -31,46 +33,79 @@ export type RuntimeMessageListener = (
 
 type PostRecord = Parameters<InstanceType<typeof BskyAgent>["post"]>[0];
 
-let bskyAgent: BskyAgent | null = null;
+let cachedAgent: BskyAgent | null = null;
+const logPrefix = "[bsky agent]";
 
-const createBskyAgent = () => {
-  return new BskyAgent({
-    service: BLUESKY_SERVICE,
-    persistSession: async (event, data) => {
-      console.log("[bsky agent]", `session:${event}`, data);
+const persistSessionHandler: AtpPersistSessionHandler = async (event, data) => {
+  const accessTokenPayload = data && jwtDecode(data.accessJwt);
+  const refreshTokenPayload = data && jwtDecode(data.refreshJwt);
 
-      if (event === "expired") {
-        await logoutFromBluesky();
-      }
-    },
+  const accessExpiresAt =
+    accessTokenPayload?.exp && new Date(accessTokenPayload.exp * 1000);
+  const refreshExpiresAt =
+    refreshTokenPayload?.exp && new Date(refreshTokenPayload.exp * 1000);
+
+  console.log(`${logPrefix} session-event:${event},`, {
+    ["access:expiresAt"]: accessExpiresAt?.toLocaleString(),
+    ["refresh:tokenId"]: refreshTokenPayload?.jti,
+    ["refresh:expiresAt"]: refreshExpiresAt?.toLocaleString(),
   });
+
+  if (!data) {
+    console.log(`${logPrefix} no session data. logout from bluesky.`);
+    await logoutFromBluesky();
+    return;
+  }
+
+  // replace with new access/refresh token.
+  // refresh token stored in bluesky's backend is rotated after using once.
+  // bluesky's `token rotation` is to update refresh token's validity period (expiresAt) to grace period (2 hours) and delete expired refresh token.
+  // https://github.com/bluesky-social/atproto/blob/%40atproto/pds%400.4.3/packages/pds/src/account-manager/index.ts#L177
+  await saveBskySession(data);
+};
+
+const getBskyAgent = async () => {
+  cachedAgent ??= new BskyAgent({
+    service: BLUESKY_SERVICE,
+    persistSession: persistSessionHandler,
+  });
+
+  if (!cachedAgent.session) {
+    const session = await getBskySession();
+    if (session) {
+      await cachedAgent.resumeSession(session);
+      console.log(`${logPrefix} session is resumed.`);
+    }
+  }
+
+  return cachedAgent;
+};
+
+const clearBskyAgent = () => {
+  cachedAgent = null;
 };
 
 export const loginToBluesky = async (identifier: string, password: string) => {
-  bskyAgent = createBskyAgent();
-  const { data } = await bskyAgent.login({ identifier, password });
-
-  if (!bskyAgent.session) {
-    bskyAgent = null;
-    throw new Error(
-      "login to bluesky was successful, but the agent has no session",
-    );
-  }
-
-  const { data: profile } = await bskyAgent.getProfile({ actor: data.did });
+  const agent = await getBskyAgent();
+  const {
+    data: { did },
+  } = await agent.login({ identifier, password });
+  const { data: profile } = await agent.getProfile({ actor: did });
 
   await Promise.all([
-    saveBskySession(bskyAgent.session),
+    saveBskySession(agent.session!), // session can NOT be undefined, since login and getProfile are successfully.
     saveBskyProfile(profile),
   ]);
+  console.log(`${logPrefix} login to bluesky is successfully.`);
 
   return profile;
 };
 
 export const logoutFromBluesky = async () => {
-  bskyAgent = null;
-
+  clearBskyAgent();
   await Promise.all([removeBskySession(), removeBskyProfile()]);
+
+  console.log(`${logPrefix} logged-out from bluesky.`);
 };
 
 const createPostRecord = async (bskyAgent: BskyAgent, text: string) => {
@@ -95,22 +130,14 @@ export const postToBluesky = async (
   text: string,
   images?: BlueskyEmbedImage[] | undefined,
 ) => {
-  if (!bskyAgent) {
-    const session = await getBskySession();
-    if (!session) {
-      throw new Error("no session data is in storage.");
-    }
-    bskyAgent = createBskyAgent();
-    await bskyAgent.resumeSession(session);
-  }
-
-  const postRecord = await createPostRecord(bskyAgent, text);
+  const agent = await getBskyAgent();
+  const postRecord = await createPostRecord(agent, text);
 
   if (images && 1 <= images.length) {
     const uploadedImages: AppBskyEmbedImages.Image[] = [];
 
     const promises = images.map(async ({ alt, mediaType, base64 }) => {
-      const result = await bskyAgent?.uploadBlob(base64ToBinary(base64), {
+      const result = await agent.uploadBlob(base64ToBinary(base64), {
         encoding: mediaType,
       });
       if (result?.success) {
@@ -149,12 +176,9 @@ export const postToBluesky = async (
               ] as const;
             },
           );
-          const result = await bskyAgent.uploadBlob(
-            new Uint8Array(arrayBuffer),
-            {
-              encoding: contentType ?? "image/jpg",
-            },
-          );
+          const result = await agent.uploadBlob(new Uint8Array(arrayBuffer), {
+            encoding: contentType ?? "image/jpg",
+          });
           external.thumb = result.data.blob;
         }
 
@@ -166,5 +190,5 @@ export const postToBluesky = async (
     }
   }
 
-  return bskyAgent.post(postRecord);
+  return agent.post(postRecord);
 };
