@@ -108,18 +108,6 @@ export const logoutFromBluesky = async () => {
   console.log(`${logPrefix} logged-out from bluesky.`);
 };
 
-const createPostRecord = async (bskyAgent: BskyAgent, text: string) => {
-  const postRecord: PostRecord = { text };
-
-  const richText = new RichText({ text });
-  await richText.detectFacets(bskyAgent);
-  if (richText.facets) {
-    postRecord.facets = richText.facets;
-  }
-
-  return postRecord;
-};
-
 export interface BlueskyEmbedImage {
   alt: string;
   base64: string;
@@ -131,55 +119,79 @@ export const postToBluesky = async (
   images?: BlueskyEmbedImage[] | undefined,
 ) => {
   const agent = await getBskyAgent();
-  const postRecord = await createPostRecord(agent, text);
+
+  const postRecord: PostRecord = { text };
+
+  const richText = new RichText({ text });
+  await richText.detectFacets(agent);
+  if (richText.facets) {
+    postRecord.facets = richText.facets;
+  }
 
   if (images && 1 <= images.length) {
-    const uploadedImages: AppBskyEmbedImages.Image[] = [];
+    // priority #1
+    // If a tweet has images, embed images as a blob
+    // https://docs.bsky.app/docs/advanced-guides/posts#images-embeds
 
-    const promises = images.map(async ({ alt, mediaType, base64 }) => {
-      const result = await agent.uploadBlob(base64ToBinary(base64), {
-        encoding: mediaType,
-      });
-      if (result?.success) {
-        const image = result.data.blob;
-        uploadedImages.push({ alt, image });
-      }
-    });
-    await Promise.all(promises);
+    if (4 < images.length) {
+      throw new Error(
+        `${logPrefix} bluesky allows to embed max 4 images. ${images.length} images are provided.`,
+      );
+    }
+
+    const uploadedImages: AppBskyEmbedImages.Image[] = await Promise.all(
+      images.map(async ({ alt, mediaType, base64 }) => {
+        const imageBinary = base64ToBinary(base64);
+        const result = await agent.uploadBlob(imageBinary, {
+          encoding: mediaType,
+        });
+        return { alt, image: result.data.blob };
+      }),
+    );
 
     postRecord.embed = {
       $type: "app.bsky.embed.images",
       images: uploadedImages,
     };
   } else {
+    // priority #2
+    // If tweet has links, embed a "first" link as a website card
+    // https://docs.bsky.app/docs/advanced-guides/posts#website-card-embeds
+
     const links = postRecord.facets?.flatMap((facet) => {
       return facet.features.filter(AppBskyRichtextFacet.isLink);
     });
     const [firstLink] = links ?? [];
 
     if (firstLink) {
-      const preview = getPreview(firstLink.uri);
+      const linkedSiteData = getPreview(firstLink.uri);
 
-      if (preview) {
+      if (linkedSiteData) {
         const external: AppBskyEmbedExternal.External = {
           uri: firstLink.uri,
-          title: preview.title,
-          description: preview.description,
+          title: linkedSiteData.title,
+          description: linkedSiteData.description,
         };
 
-        if (preview.imageUrl) {
-          const [contentType, arrayBuffer] = await fetch(preview.imageUrl).then(
-            async (res) => {
-              return [
-                res.headers.get("Content-Type"),
-                await res.arrayBuffer(),
-              ] as const;
-            },
-          );
-          const result = await agent.uploadBlob(new Uint8Array(arrayBuffer), {
-            encoding: contentType ?? "image/jpg",
-          });
-          external.thumb = result.data.blob;
+        if (linkedSiteData.imageUrl) {
+          try {
+            const fetchRes = await fetch(linkedSiteData.imageUrl);
+            const apiOptions = [
+              new Uint8Array(await fetchRes.arrayBuffer()),
+              {
+                encoding: fetchRes.headers.get("Content-Type") ?? "image/jpg", // no basis fallback value...
+              },
+            ] as const;
+            const {
+              data: { blob },
+            } = await agent.uploadBlob(...apiOptions);
+            external.thumb = blob;
+          } catch (e) {
+            console.error(
+              `${logPrefix} failed to load a linked site's image, but continue post process.`,
+              e,
+            );
+          }
         }
 
         postRecord.embed = {
