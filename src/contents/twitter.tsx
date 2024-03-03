@@ -16,11 +16,13 @@ import AskPostToastContent from "~components/ToastContent/AskPostToastContent";
 import { useEnsureMedia } from "~contents/hooks/useEnsureMedia";
 import { onAskPostToBluesky } from "~contents/messages/askPostToBluesky";
 import { arrayBufferToBase64 } from "~helpers/utils";
+import { useBluesky } from "~hooks/useBluesky";
 
 const defaultToastOptions: ToastOptions = {
   position: "bottom-right",
-  theme: "colored",
   icon: false,
+  autoClose: false,
+  closeButton: false,
 };
 
 const styleElement = document.createElement("style");
@@ -33,7 +35,21 @@ const styleCache = createCache({
 const globalStyles = css`
   ${reactToastifyStyle.replace(":root", ":host")}
   :host {
-    --toastify-color-success: rgb(0, 112, 255);
+    --color-bluesky-logo-blue-values: 0, 133, 255;
+    --color-bluesky-logo-blue: rgb(var(--color-bluesky-logo-blue-values));
+    --color-bluesky-button-gradation-from: rgb(90, 113, 250);
+    --color-bluesky-button-gradation-to: rgb(0, 133, 255);
+    --color-bluesky-font-blue: rgb(16, 131, 254);
+
+    --toastify-color-success: var(--color-bluesky-logo-blue);
+  }
+
+  .Toastify__toast {
+    border: 1px solid rgba(var(--color-bluesky-logo-blue-values), 0.2);
+  }
+
+  .Toastify__toast-body {
+    padding: 0;
   }
 `;
 
@@ -46,6 +62,7 @@ export const getStyle: PlasmoGetStyle = () => {
 };
 
 const ContentScriptUi: FC<PlasmoCSUIProps> = () => {
+  const { profile } = useBluesky();
   const { getEnsuredMediaEntries, clearEnsuredMedia } = useEnsureMedia();
 
   useEffect(() => {
@@ -106,13 +123,13 @@ const ContentScriptUi: FC<PlasmoCSUIProps> = () => {
         () => (
           <AskPostToastContent
             tweetText={tweetText}
+            profileImageUrl={profile?.avatar}
             onRequestPost={onRequestPost}
+            onClose={() => toast.dismiss()}
           />
         ),
         {
           ...defaultToastOptions,
-          type: "success",
-          autoClose: false,
         },
       );
     };
@@ -121,7 +138,7 @@ const ContentScriptUi: FC<PlasmoCSUIProps> = () => {
     return () => {
       unsubscribe();
     };
-  }, [getEnsuredMediaEntries, clearEnsuredMedia]);
+  }, [profile, getEnsuredMediaEntries, clearEnsuredMedia]);
 
   return (
     <CacheProvider value={styleCache}>
