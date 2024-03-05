@@ -13,10 +13,9 @@ import {
 
 import { sendPostToBluesky } from "~background/messages/postToBluesky";
 import AskPostToastContent from "~components/ToastContent/AskPostToastContent";
-import { useEnsureMedia } from "~hooks/useEnsureMedia";
 import { onAskPostToBluesky } from "~contents/messages/askPostToBluesky";
-import { arrayBufferToBase64 } from "~helpers/utils";
 import { useBluesky } from "~hooks/useBluesky";
+import { useEnsureMedia } from "~hooks/useEnsureMedia";
 
 const defaultToastOptions: ToastOptions = {
   position: "bottom-right",
@@ -63,7 +62,7 @@ export const getStyle: PlasmoGetStyle = () => {
 
 const ContentScriptUi: FC<PlasmoCSUIProps> = () => {
   const { profile, checkIsSessionAvailable } = useBluesky();
-  const { getEnsuredMediaEntries, clearEnsuredMedia } = useEnsureMedia();
+  const { getEnsuredMedias, clearEnsuredMedia } = useEnsureMedia();
 
   useEffect(() => {
     const handler: Parameters<typeof onAskPostToBluesky>[0] = ({
@@ -78,26 +77,11 @@ const ContentScriptUi: FC<PlasmoCSUIProps> = () => {
       const onRequestPost = async () => {
         toast.update(toastId, { autoClose: false });
 
-        const postTargetMedias = getEnsuredMediaEntries().flatMap(
-          ([ensuredMediaId, ensuredMedia]) => {
-            if (!tweetMediaIds.includes(ensuredMediaId)) {
-              return [];
-            }
+        const postTargetMedias = getEnsuredMedias(tweetMediaIds)
+          // TODO Consider what to handle images that could not be ensured. ignore(as-is)? show error?
+          .flatMap((value) => (value ? [value] : []));
 
-            const { alt, arrayBuffer, mediaType } = ensuredMedia;
-            return [
-              {
-                mediaId: ensuredMediaId,
-                alt,
-                base64: arrayBufferToBase64(arrayBuffer),
-                mediaType,
-              },
-            ];
-          },
-        );
-        clearEnsuredMedia();
-
-        const response = await sendPostToBluesky(
+        const postResult = await sendPostToBluesky(
           tweetId,
           postTargetMedias,
         ).catch((e) => ({
@@ -105,21 +89,23 @@ const ContentScriptUi: FC<PlasmoCSUIProps> = () => {
           errorMessage: e instanceof Error ? e.message : "error",
         }));
 
-        const toastOptions: UpdateOptions = {
-          ...defaultToastOptions,
-          ...(response.isSuccess
-            ? {
-                render: () => "送信完了 🦋",
-                type: "success",
-                autoClose: 1000,
-              }
-            : {
-                render: () => response.errorMessage,
-                type: "error",
-                theme: "colored",
-                autoClose: 3000,
-              }),
-        };
+        clearEnsuredMedia(tweetMediaIds);
+
+        const toastOptions: UpdateOptions = postResult.isSuccess
+          ? {
+              ...defaultToastOptions,
+              render: () => "送信完了 🦋",
+              type: "success",
+              autoClose: 1000,
+            }
+          : {
+              ...defaultToastOptions,
+              render: () => postResult.errorMessage,
+              type: "error",
+              theme: "colored",
+              autoClose: 3000,
+            };
+
         toast.update(toastId, toastOptions);
       };
 
@@ -143,12 +129,7 @@ const ContentScriptUi: FC<PlasmoCSUIProps> = () => {
     return () => {
       unsubscribe();
     };
-  }, [
-    profile,
-    getEnsuredMediaEntries,
-    clearEnsuredMedia,
-    checkIsSessionAvailable,
-  ]);
+  }, [profile, getEnsuredMedias, clearEnsuredMedia, checkIsSessionAvailable]);
 
   return (
     <CacheProvider value={styleCache}>

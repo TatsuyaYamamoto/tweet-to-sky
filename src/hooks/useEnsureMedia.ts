@@ -2,6 +2,7 @@ import { md5 as toMd5 } from "js-md5";
 import { useCallback, useEffect, useRef } from "react";
 
 import { onEnsureMedia } from "~contents/messages/ensureMedia";
+import { arrayBufferToBase64 } from "~helpers/utils";
 
 const getTweetImages = () => {
   return Array.from(document.body.querySelectorAll("img"))
@@ -15,6 +16,7 @@ const getTweetImages = () => {
 interface EnsuredMedia {
   alt: string;
   arrayBuffer: ArrayBuffer;
+  base64: string;
   mediaType: string;
 }
 
@@ -41,6 +43,7 @@ export const useEnsureMedia = () => {
           if (image) {
             ensuredMediaMapRef.current.set(mediaId, {
               ...image,
+              base64: arrayBufferToBase64(image.arrayBuffer),
               mediaType,
             });
           }
@@ -55,13 +58,17 @@ export const useEnsureMedia = () => {
     };
   }, []);
 
-  const getEnsuredMediaEntries = useCallback(() => {
-    return Array.from(ensuredMediaMapRef.current.entries());
+  const getEnsuredMedias = useCallback((mediaIds: string[]) => {
+    return mediaIds.map((mediaId) => {
+      return ensuredMediaMapRef.current.get(mediaId);
+    });
   }, []);
 
-  const clearEnsuredMedia = useCallback(() => {
-    ensuredMediaMapRef.current.clear();
+  const clearEnsuredMedia = useCallback((mediaIds: string[]) => {
+    mediaIds.map((mediaId) => {
+      ensuredMediaMapRef.current.delete(mediaId);
+    });
   }, []);
 
-  return { getEnsuredMediaEntries, clearEnsuredMedia };
+  return { getEnsuredMedias, clearEnsuredMedia };
 };
