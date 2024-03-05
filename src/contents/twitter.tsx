@@ -62,7 +62,7 @@ export const getStyle: PlasmoGetStyle = () => {
 };
 
 const ContentScriptUi: FC<PlasmoCSUIProps> = () => {
-  const { profile } = useBluesky();
+  const { profile, checkIsSessionAvailable } = useBluesky();
   const { getEnsuredMediaEntries, clearEnsuredMedia } = useEnsureMedia();
 
   useEffect(() => {
@@ -71,6 +71,10 @@ const ContentScriptUi: FC<PlasmoCSUIProps> = () => {
       tweetText,
       mediaIds: tweetMediaIds,
     }) => {
+      if (!checkIsSessionAvailable()) {
+        return;
+      }
+
       const onRequestPost = async () => {
         toast.update(toastId, { autoClose: false });
 
@@ -112,7 +116,8 @@ const ContentScriptUi: FC<PlasmoCSUIProps> = () => {
             : {
                 render: () => response.errorMessage,
                 type: "error",
-                autoClose: false,
+                theme: "colored",
+                autoClose: 3000,
               }),
         };
         toast.update(toastId, toastOptions);
@@ -138,7 +143,12 @@ const ContentScriptUi: FC<PlasmoCSUIProps> = () => {
     return () => {
       unsubscribe();
     };
-  }, [profile, getEnsuredMediaEntries, clearEnsuredMedia]);
+  }, [
+    profile,
+    getEnsuredMediaEntries,
+    clearEnsuredMedia,
+    checkIsSessionAvailable,
+  ]);
 
   return (
     <CacheProvider value={styleCache}>
