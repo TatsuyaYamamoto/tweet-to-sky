@@ -43,7 +43,7 @@ const onPostToBluesky: PlasmoMessaging.MessageHandler<
     res.send({ isSuccess: true, tweetId });
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : "unknown error";
-    console.error(`${logPrefix} ${errorMessage}`);
+    console.error(`${logPrefix} ${errorMessage}`, e);
     res.send({ isSuccess: false, errorMessage });
   }
 };
