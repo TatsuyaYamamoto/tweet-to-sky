@@ -1,5 +1,5 @@
-import offIconPath from "url:../../assets/icon-off@128x128.png";
-import onIconPath from "url:../../assets/icon@128x128.png";
+import offIconPath from "url:../../../assets/icon-off@128x128.png";
+import onIconPath from "url:../../../assets/icon@128x128.png";
 
 import { STORAGE_API_KEYS } from "~constants";
 

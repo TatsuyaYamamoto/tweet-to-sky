@@ -13,7 +13,7 @@ import {
 
 import { sendPostToBluesky } from "~background/messages/postToBluesky";
 import AskPostToastContent from "~components/ToastContent/AskPostToastContent";
-import { useEnsureMedia } from "~contents/hooks/useEnsureMedia";
+import { useEnsureMedia } from "~hooks/useEnsureMedia";
 import { onAskPostToBluesky } from "~contents/messages/askPostToBluesky";
 import { arrayBufferToBase64 } from "~helpers/utils";
 import { useBluesky } from "~hooks/useBluesky";
