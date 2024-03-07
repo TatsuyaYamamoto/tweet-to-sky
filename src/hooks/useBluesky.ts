@@ -1,6 +1,6 @@
 import type { AtpSessionData } from "@atproto/api";
 import { jwtDecode } from "jwt-decode";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 
 import { Storage } from "@plasmohq/storage";
 import { useStorage } from "@plasmohq/storage/hook";
@@ -45,5 +45,15 @@ export const useBluesky = () => {
     return !isTokenExpired(refreshToken);
   }, [savedSession]);
 
-  return { login, logout, profile: savedProfile, checkIsSessionAvailable };
+  const profileUrl = useMemo(() => {
+    return `https://bsky.app/profile/${savedProfile?.handle}`;
+  }, [savedProfile]);
+
+  return {
+    login,
+    logout,
+    profile: savedProfile,
+    checkIsSessionAvailable,
+    profileUrl,
+  };
 };
