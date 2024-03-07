@@ -13,11 +13,11 @@ import {
 import { sendPostToBluesky } from "~background/messages/postToBluesky";
 import ContentScriptUiCacheProvider, {
   cacheStyleElement,
-} from "~components/ContentScriptUiCacheProvider";
-import AskPostToastContent from "~components/ToastContent/AskPostToastContent";
+} from "~shared/components/ContentScriptUiCacheProvider";
+import AskPostToastContent from "~shared/components/ToastContent/AskPostToastContent";
 import { onAskPostToBluesky } from "~contents/messages/askPostToBluesky";
-import { useBluesky } from "~hooks/useBluesky";
-import { useEnsureMedia } from "~hooks/useEnsureMedia";
+import { useBluesky } from "~shared/hooks/useBluesky";
+import { useEnsureMedia } from "~shared/hooks/useEnsureMedia";
 
 const defaultToastOptions: ToastOptions = {
   position: "bottom-right",

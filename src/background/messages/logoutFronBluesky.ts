@@ -1,6 +1,6 @@
 import { sendToBackground, type PlasmoMessaging } from "@plasmohq/messaging";
 
-import { logoutFromBluesky } from "~helpers/bluesky";
+import { logoutFromBluesky } from "~shared/helpers/bluesky";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface RequestBody {}

@@ -2,7 +2,7 @@ import { md5 as toMd5 } from "js-md5";
 import { useCallback, useEffect, useRef } from "react";
 
 import { onEnsureMedia } from "~contents/messages/ensureMedia";
-import { arrayBufferToBase64 } from "~helpers/utils";
+import { arrayBufferToBase64 } from "~shared/helpers/utils";
 
 const getTweetImages = () => {
   return Array.from(document.body.querySelectorAll("img"))

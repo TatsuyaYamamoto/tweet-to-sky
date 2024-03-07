@@ -2,8 +2,8 @@ import { type AtpSessionData } from "@atproto/api";
 
 import { Storage } from "@plasmohq/storage";
 
-import { STORAGE_API_KEYS } from "~constants";
-import type { ProfileViewDetailed } from "~helpers/bluesky";
+import { STORAGE_API_KEYS } from "~shared/constants";
+import type { ProfileViewDetailed } from "~shared/helpers/bluesky";
 
 const localAreaStorage = new Storage({ area: "local" });
 

@@ -1,7 +1,7 @@
 import offIconPath from "url:../../../assets/icon-off@128x128.png";
 import onIconPath from "url:../../../assets/icon@128x128.png";
 
-import { STORAGE_API_KEYS } from "~constants";
+import { STORAGE_API_KEYS } from "~shared/constants";
 
 // set icon when Service Worker is initialized
 chrome.storage.local.get((values: Record<string, unknown>) => {

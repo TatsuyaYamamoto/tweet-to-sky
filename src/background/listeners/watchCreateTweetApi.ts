@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import type { AskPostToBlueskyMessage } from "~contents/messages/askPostToBluesky";
-import { saveTweetText } from "~helpers/twitter";
+import { saveTweetText } from "~shared/helpers/twitter";
 
 export const CreateTweetApiResponseSchema = z.object({
   variables: z.object({

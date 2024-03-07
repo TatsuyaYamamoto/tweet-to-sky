@@ -2,9 +2,9 @@ import { Box, Image as ChakraImage, ChakraProvider } from "@chakra-ui/react";
 import type { FC } from "react";
 import offIconPath from "url:../../assets/icon-off@128x128.png";
 
-import BlueskyProfile from "~components/BlueskyProfile/BlueskyProfile";
-import LoginForm, { type LoginInputs } from "~components/LoginForm";
-import { useBluesky } from "~hooks/useBluesky";
+import BlueskyProfile from "~shared/components/BlueskyProfile/BlueskyProfile";
+import LoginForm, { type LoginInputs } from "~shared/components/LoginForm";
+import { useBluesky } from "~shared/hooks/useBluesky";
 
 const PopupIndex: FC = () => {
   const { profile, profileUrl, login, logout } = useBluesky();

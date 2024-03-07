@@ -8,16 +8,16 @@ import {
 } from "@atproto/api";
 import { jwtDecode } from "jwt-decode";
 
-import { BLUESKY_SERVICE } from "~constants";
+import { BLUESKY_SERVICE } from "~shared/constants";
 import {
   getBskySession,
   removeBskyProfile,
   removeBskySession,
   saveBskyProfile,
   saveBskySession,
-} from "~helpers/storage";
-import { getPreview } from "~helpers/twitter";
-import { base64ToBinary } from "~helpers/utils";
+} from "~shared/helpers/storage";
+import { getPreview } from "~shared/helpers/twitter";
+import { base64ToBinary } from "~shared/helpers/utils";
 
 export type ProfileViewDetailed = Awaited<
   ReturnType<InstanceType<typeof BskyAgent>["getProfile"]>

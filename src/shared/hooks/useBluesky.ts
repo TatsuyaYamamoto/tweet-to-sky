@@ -7,9 +7,9 @@ import { useStorage } from "@plasmohq/storage/hook";
 
 import { sendLoginToBluesky } from "~background/messages/loginToBluesky";
 import { sendLogoutFromBluesky } from "~background/messages/logoutFronBluesky";
-import { STORAGE_API_KEYS } from "~constants";
-import type { ProfileViewDetailed } from "~helpers/bluesky";
-import { isTokenExpired } from "~helpers/jwt";
+import { STORAGE_API_KEYS } from "~shared/constants";
+import type { ProfileViewDetailed } from "~shared/helpers/bluesky";
+import { isTokenExpired } from "~shared/helpers/jwt";
 
 const localAreaStorage = new Storage({ area: "local" });
 

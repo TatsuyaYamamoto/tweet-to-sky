@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { savePreview } from "~helpers/twitter";
+import { savePreview } from "~shared/helpers/twitter";
 
 const StringValue = z.object({
   type: z.literal("STRING"),

@@ -1,6 +1,6 @@
 import { sendToBackground, type PlasmoMessaging } from "@plasmohq/messaging";
 
-import { loginToBluesky, type ProfileViewDetailed } from "~helpers/bluesky";
+import { loginToBluesky, type ProfileViewDetailed } from "~shared/helpers/bluesky";
 
 interface RequestBody {
   identifier: string;

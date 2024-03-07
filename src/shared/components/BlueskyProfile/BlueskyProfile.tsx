@@ -1,8 +1,8 @@
 import { Avatar, Box, Button, Image as ChakraImage } from "@chakra-ui/react";
 import { useEffect, useRef, useState, type FC } from "react";
 
-import BlueskyProfileCounter from "~components/BlueskyProfile/BlueskyProfileCounter";
-import type { ProfileViewDetailed } from "~helpers/bluesky";
+import BlueskyProfileCounter from "~shared/components/BlueskyProfile/BlueskyProfileCounter";
+import type { ProfileViewDetailed } from "~shared/helpers/bluesky";
 
 interface ProfileProps {
   profile: ProfileViewDetailed;

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { RuntimeMessageListener } from "~helpers/bluesky";
+import type { RuntimeMessageListener } from "~shared/helpers/bluesky";
 
 export const EnsureMediaMessageSchema = z.object({
   type: z.literal("ensureMedia"),

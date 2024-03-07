@@ -1,7 +1,7 @@
 import { sendToBackground, type PlasmoMessaging } from "@plasmohq/messaging";
 
-import { postToBluesky, type BlueskyEmbedImage } from "~helpers/bluesky";
-import { restoreTweetText } from "~helpers/twitter";
+import { postToBluesky, type BlueskyEmbedImage } from "~shared/helpers/bluesky";
+import { restoreTweetText } from "~shared/helpers/twitter";
 
 interface PostToBlueskyBody {
   tweetId: string;
