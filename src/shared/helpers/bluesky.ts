@@ -6,9 +6,9 @@ import {
   RichText,
   type AtpPersistSessionHandler,
 } from "@atproto/api";
-import { jwtDecode } from "jwt-decode";
 
 import { BLUESKY_SERVICE } from "~shared/constants";
+import { decodeBlueskyJwt } from "~shared/helpers/jwt";
 import {
   getStorageValue,
   removeStorageValue,
@@ -35,18 +35,13 @@ let cachedAgent: BskyAgent | null = null;
 const logPrefix = "[bsky agent]";
 
 const persistSessionHandler: AtpPersistSessionHandler = async (event, data) => {
-  const accessTokenPayload = data && jwtDecode(data.accessJwt);
-  const refreshTokenPayload = data && jwtDecode(data.refreshJwt);
-
-  const accessExpiresAt =
-    accessTokenPayload?.exp && new Date(accessTokenPayload.exp * 1000);
-  const refreshExpiresAt =
-    refreshTokenPayload?.exp && new Date(refreshTokenPayload.exp * 1000);
+  const accessToken = data && decodeBlueskyJwt(data.accessJwt);
+  const refreshToken = data && decodeBlueskyJwt(data.refreshJwt);
 
   console.log(`${logPrefix} session-event:${event},`, {
-    ["access:expiresAt"]: accessExpiresAt?.toLocaleString(),
-    ["refresh:tokenId"]: refreshTokenPayload?.jti,
-    ["refresh:expiresAt"]: refreshExpiresAt?.toLocaleString(),
+    ["access:expiresAt"]: accessToken?.toLocaleString(),
+    ["refresh:jwtId"]: refreshToken?.jwtId,
+    ["refresh:expiresAt"]: refreshToken?.toLocaleString(),
   });
 
   if (!data) {

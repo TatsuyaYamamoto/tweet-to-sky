@@ -1,4 +1,3 @@
-import { jwtDecode } from "jwt-decode";
 import { useCallback, useMemo } from "react";
 
 import { sendLoginToBluesky } from "~background/messages/loginToBluesky";
@@ -23,13 +22,11 @@ export const useBluesky = () => {
       return false;
     }
 
-    const accessToken = jwtDecode(savedSession.accessJwt);
-    if (!isTokenExpired(accessToken)) {
+    if (!isTokenExpired(savedSession.accessJwt)) {
       return true;
     }
 
-    const refreshToken = jwtDecode(savedSession.refreshJwt);
-    return !isTokenExpired(refreshToken);
+    return !isTokenExpired(savedSession.refreshJwt);
   }, [savedSession]);
 
   const profileUrl = useMemo(() => {

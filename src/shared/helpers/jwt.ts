@@ -1,13 +1,20 @@
-import type { JwtPayload } from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 
-export const isTokenExpired = (payload: JwtPayload) => {
-  const exp = payload.exp;
-  if (exp === undefined) {
-    // no expiration date
-    return false;
+export const decodeBlueskyJwt = (token: string) => {
+  const payload = jwtDecode(token);
+
+  if (payload.exp === undefined) {
+    throw new Error(`unexpected token payload. token has no "exp"`);
   }
 
-  const expirationDate = new Date(exp * 1000);
+  return {
+    jwtId: payload.jti,
+    expirationDate: new Date(payload.exp * 1000),
+  };
+};
+
+export const isTokenExpired = (token: string) => {
+  const payload = decodeBlueskyJwt(token);
   const now = new Date();
-  return expirationDate < now;
+  return payload.expirationDate < now;
 };
