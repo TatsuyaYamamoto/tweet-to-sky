@@ -14,7 +14,21 @@ chrome.storage.local.get(storageKey, (values) => {
 
 // update icon when profile data is set or removed.
 chrome.storage.local.onChanged.addListener((changes) => {
-  const newValue = changes[storageKey]?.newValue as unknown;
-  const icon = newValue ? onIconPath : offIconPath;
-  chrome.action.setIcon({ path: icon }).catch((e) => console.error(e));
+  const changed = changes[storageKey];
+  if (!changed) {
+    // ignore non-target value
+    return;
+  }
+  const newValue = changed.newValue as unknown;
+  const oldValue = changed.oldValue as unknown;
+
+  // is logged-in
+  if (!oldValue && newValue) {
+    chrome.action.setIcon({ path: onIconPath }).catch((e) => console.error(e));
+  }
+
+  // is logged-out
+  if (oldValue && !newValue) {
+    chrome.action.setIcon({ path: offIconPath }).catch((e) => console.error(e));
+  }
 });
