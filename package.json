@@ -30,6 +30,7 @@
     "@emotion/styled": "11.11.0",
     "@plasmohq/messaging": "0.6.2",
     "@plasmohq/storage": "1.9.2",
+    "browser-image-compression": "^2.0.2",
     "framer-motion": "11.0.3",
     "js-md5": "0.8.3",
     "jwt-decode": "4.0.0",
