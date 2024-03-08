@@ -22,7 +22,10 @@ export const PreviewCardApiResponseSchema = z.object({
     binding_values: z.object({
       card_url: StringValue,
       description: StringValue,
+      // e.g.; OG Image
       photo_image_full_size_original: ImageValue.optional(),
+      // e.g.; YouTube player image
+      player_image_original: ImageValue.optional(),
       title: StringValue,
     }),
   }),
@@ -71,10 +74,13 @@ chrome.webRequest.onSendHeaders.addListener(
               title: { string_value: title },
               description: { string_value: description },
               photo_image_full_size_original,
+              player_image_original,
             },
           },
         } = parseResult.data;
-        const imageUrl = photo_image_full_size_original?.image_value.url;
+        const imageUrl =
+          photo_image_full_size_original?.image_value.url ??
+          player_image_original?.image_value.url;
 
         savePreview(previewTargetUrl, { title, description, imageUrl });
       })
