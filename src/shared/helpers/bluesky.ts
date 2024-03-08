@@ -10,11 +10,9 @@ import { jwtDecode } from "jwt-decode";
 
 import { BLUESKY_SERVICE } from "~shared/constants";
 import {
-  getBskySession,
-  removeBskyProfile,
-  removeBskySession,
-  saveBskyProfile,
-  saveBskySession,
+  getStorageValue,
+  removeStorageValue,
+  setStorageValue,
 } from "~shared/helpers/storage";
 import { getPreview } from "~shared/helpers/twitter";
 import { base64ToBinary } from "~shared/helpers/utils";
@@ -61,7 +59,7 @@ const persistSessionHandler: AtpPersistSessionHandler = async (event, data) => {
   // refresh token stored in bluesky's backend is rotated after using once.
   // bluesky's `token rotation` is to update refresh token's validity period (expiresAt) to grace period (2 hours) and delete expired refresh token.
   // https://github.com/bluesky-social/atproto/blob/%40atproto/pds%400.4.3/packages/pds/src/account-manager/index.ts#L177
-  await saveBskySession(data);
+  await setStorageValue("bluesky:session", data);
 };
 
 const getBskyAgent = async () => {
@@ -71,7 +69,7 @@ const getBskyAgent = async () => {
   });
 
   if (!cachedAgent.session) {
-    const session = await getBskySession();
+    const session = await getStorageValue("bluesky:session");
     if (session) {
       await cachedAgent.resumeSession(session);
       console.log(`${logPrefix} session is resumed.`);
@@ -93,8 +91,8 @@ export const loginToBluesky = async (identifier: string, password: string) => {
   const { data: profile } = await agent.getProfile({ actor: did });
 
   await Promise.all([
-    saveBskySession(agent.session!), // session can NOT be undefined, since login and getProfile are successfully.
-    saveBskyProfile(profile),
+    setStorageValue("bluesky:session", agent.session!), // session can NOT be undefined, since login and getProfile are successfully.
+    setStorageValue("bluesky:profile", profile),
   ]);
   console.log(`${logPrefix} login to bluesky is successfully.`);
 
@@ -103,7 +101,10 @@ export const loginToBluesky = async (identifier: string, password: string) => {
 
 export const logoutFromBluesky = async () => {
   clearBskyAgent();
-  await Promise.all([removeBskySession(), removeBskyProfile()]);
+  await Promise.all([
+    removeStorageValue("bluesky:session"),
+    removeStorageValue("bluesky:profile"),
+  ]);
 
   console.log(`${logPrefix} logged-out from bluesky.`);
 };

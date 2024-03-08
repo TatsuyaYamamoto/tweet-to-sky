@@ -1,28 +1,37 @@
-import { type AtpSessionData } from "@atproto/api";
+import type { AtpSessionData } from "@atproto/api";
 
 import { Storage } from "@plasmohq/storage";
 
-import { STORAGE_API_KEYS } from "~shared/constants";
 import type { ProfileViewDetailed } from "~shared/helpers/bluesky";
 
-const localAreaStorage = new Storage({ area: "local" });
+export interface StorageKeyValue {
+  "bluesky:session": AtpSessionData;
+  "bluesky:profile": ProfileViewDetailed;
+}
 
-export const getBskySession = () => {
-  return localAreaStorage.get<AtpSessionData>(STORAGE_API_KEYS.BLUESKY_SESSION);
+export type StorageKey = keyof StorageKeyValue;
+
+export const localAreaStorage = new Storage({ area: "local" });
+
+export const getStorageValue = <
+  Key extends StorageKey,
+  Value extends StorageKeyValue[Key],
+>(
+  key: Key,
+) => {
+  return localAreaStorage.get<Value>(key);
 };
 
-export const saveBskySession = (value: AtpSessionData) => {
-  return localAreaStorage.set(STORAGE_API_KEYS.BLUESKY_SESSION, value);
+export const setStorageValue = <
+  Key extends StorageKey,
+  Value extends StorageKeyValue[Key],
+>(
+  key: Key,
+  value: Value,
+) => {
+  return localAreaStorage.set(key, value);
 };
 
-export const removeBskySession = () => {
-  return localAreaStorage.remove(STORAGE_API_KEYS.BLUESKY_SESSION);
-};
-
-export const saveBskyProfile = (value: ProfileViewDetailed) => {
-  return localAreaStorage.set(STORAGE_API_KEYS.BLUESKY_PROFILE, value);
-};
-
-export const removeBskyProfile = () => {
-  return localAreaStorage.remove(STORAGE_API_KEYS.BLUESKY_PROFILE);
+export const removeStorageValue = <Key extends StorageKey>(key: Key) => {
+  return localAreaStorage.remove(key);
 };
