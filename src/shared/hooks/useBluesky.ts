@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react";
 
 import { sendLoginToBluesky } from "~background/messages/loginToBluesky";
 import { sendLogoutFromBluesky } from "~background/messages/logoutFronBluesky";
+import { getProfileUrl } from "~shared/helpers/bluesky";
 import { isTokenExpired } from "~shared/helpers/jwt";
 import { useStorageApi } from "~shared/hooks/useStorageApi";
 
@@ -30,7 +31,7 @@ export const useBluesky = () => {
   }, [savedSession]);
 
   const profileUrl = useMemo(() => {
-    return `https://bsky.app/profile/${savedProfile?.handle}`;
+    return savedProfile?.handle && getProfileUrl(savedProfile.handle);
   }, [savedProfile]);
 
   return {

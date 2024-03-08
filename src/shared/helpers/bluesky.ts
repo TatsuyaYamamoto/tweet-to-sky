@@ -7,7 +7,6 @@ import {
   type AtpPersistSessionHandler,
 } from "@atproto/api";
 
-import { BLUESKY_SERVICE } from "~shared/constants";
 import { decodeBlueskyJwt } from "~shared/helpers/jwt";
 import {
   getStorageValue,
@@ -33,6 +32,7 @@ type PostRecord = Parameters<InstanceType<typeof BskyAgent>["post"]>[0];
 
 let cachedAgent: BskyAgent | null = null;
 const logPrefix = "[bsky agent]";
+const BLUESKY_SERVICE = "https://bsky.social";
 
 const persistSessionHandler: AtpPersistSessionHandler = async (event, data) => {
   const accessToken = data && decodeBlueskyJwt(data.accessJwt);
@@ -199,4 +199,8 @@ export const postToBluesky = async (
   }
 
   return agent.post(postRecord);
+};
+
+export const getProfileUrl = (handle: string) => {
+  return `https://bsky.app/profile/${handle}`;
 };
