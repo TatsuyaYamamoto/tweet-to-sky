@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { RuntimeMessageListener } from "~shared/helpers/bluesky";
+import type { RuntimeMessageListener } from "~shared/helpers/types";
 
 export const AskPostToBlueskyMessageSchema = z.object({
   type: z.literal("askPostToBluesky"),
