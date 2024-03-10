@@ -14,7 +14,7 @@ import {
   setStorageValue,
 } from "~shared/helpers/storage";
 import { getPreview } from "~shared/helpers/twitter";
-import { base64ToBinary } from "~shared/helpers/utils";
+import { base64ToBinary, compressImage } from "~shared/helpers/utils";
 
 export type ProfileViewDetailed = Awaited<
   ReturnType<InstanceType<typeof BskyAgent>["getProfile"]>
@@ -31,8 +31,17 @@ export type RuntimeMessageListener = (
 type PostRecord = Parameters<InstanceType<typeof BskyAgent>["post"]>[0];
 
 let cachedAgent: BskyAgent | null = null;
+
 const logPrefix = "[bsky agent]";
+
 const BLUESKY_SERVICE = "https://bsky.social";
+
+/**
+ * https://docs.bsky.app/docs/advanced-guides/posts#images-embeds
+ */
+const MAX_BLUESKY_IMAGE_FILE_SIZE_MIB =
+  /* (max bytes with buffer) / kib / mib */
+  (1000000 * 0.99) / 1024 / 1024;
 
 const persistSessionHandler: AtpPersistSessionHandler = async (event, data) => {
   const accessToken = data && decodeBlueskyJwt(data.accessJwt);
@@ -137,8 +146,12 @@ export const postToBluesky = async (
 
     const uploadedImages: AppBskyEmbedImages.Image[] = await Promise.all(
       images.map(async ({ alt, mediaType, base64 }) => {
-        const imageBinary = base64ToBinary(base64);
-        const result = await agent.uploadBlob(imageBinary, {
+        const compressed = await compressImage(
+          base64ToBinary(base64),
+          mediaType,
+          MAX_BLUESKY_IMAGE_FILE_SIZE_MIB,
+        );
+        const result = await agent.uploadBlob(compressed, {
           encoding: mediaType,
         });
         return { alt, image: result.data.blob };
