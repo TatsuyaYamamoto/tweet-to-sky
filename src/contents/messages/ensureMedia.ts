@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import type { RuntimeMessageListener } from "~shared/helpers/types";
-
 export const EnsureMediaMessageSchema = z.object({
   type: z.literal("ensureMedia"),
   mediaId: z.string(),
@@ -14,7 +12,7 @@ export type EnsureMediaMessage = z.infer<typeof EnsureMediaMessageSchema>;
 export const onEnsureMedia = (
   callback: (message: EnsureMediaMessage) => void,
 ) => {
-  const listener: RuntimeMessageListener = (rawMessage): true | void => {
+  const listener = (rawMessage: unknown) => {
     const logPrefix = `[onMessage:ensureMedia]`;
     console.log(`${logPrefix} background->tab(-)`, rawMessage);
 
@@ -24,8 +22,6 @@ export const onEnsureMedia = (
     }
 
     callback(parseResult.data);
-
-    return true;
   };
 
   chrome.runtime.onMessage.addListener(listener);

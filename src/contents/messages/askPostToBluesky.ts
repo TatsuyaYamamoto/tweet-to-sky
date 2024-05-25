@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import type { RuntimeMessageListener } from "~shared/helpers/types";
-
 export const AskPostToBlueskyMessageSchema = z.object({
   type: z.literal("askPostToBluesky"),
   tweetId: z.string(),
@@ -15,7 +13,7 @@ export type AskPostToBlueskyMessage = z.infer<
 export const onAskPostToBluesky = (
   callback: (message: AskPostToBlueskyMessage) => void,
 ) => {
-  const lister: RuntimeMessageListener = (rawMessage): true | void => {
+  const lister = (rawMessage: unknown) => {
     const logPrefix = `[onMessage:askPostToBluesky]`;
     console.log(`${logPrefix} background->tab(-)`, rawMessage);
 
