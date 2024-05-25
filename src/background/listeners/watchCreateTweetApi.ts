@@ -22,8 +22,9 @@ chrome.webRequest.onBeforeRequest.addListener(
 
     // 2024/02/09: `https://twitter.com/i/api/graphql/8ED1SMuUGkOZVBEjiYUTfw/CreateTweet`
     // 2024/02/15: `https://twitter.com/i/api/graphql/_BCvBRcat20zPDIAxmH5ag/CreateTweet`
+    // 2024/05/25: `https://x.com/i/api/graphql/31-6kYrWwW7ZqHmLu2mm9w/CreateTweet`
     const tweetApiPattern = new RegExp(
-      "https://twitter\\.com/i/api/graphql/[^/]+/CreateTweet",
+      "https://(twitter|x)\\.com/i/api/graphql/[^/]+/CreateTweet",
     );
 
     if (!(method === "POST" && tweetApiPattern.test(url))) {
@@ -66,7 +67,7 @@ chrome.webRequest.onBeforeRequest.addListener(
     });
   },
   {
-    urls: ["https://twitter.com/i/api/*"],
+    urls: ["https://twitter.com/i/api/*", "https://x.com/i/api/*"],
     types: ["xmlhttprequest"],
   },
   ["requestBody"],
