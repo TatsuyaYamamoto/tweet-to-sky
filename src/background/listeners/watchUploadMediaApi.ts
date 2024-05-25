@@ -56,7 +56,10 @@ chrome.webRequest.onCompleted.addListener(
     }
   },
   {
-    urls: ["https://upload.twitter.com/i/media/upload.json?*"],
+    urls: [
+      "https://upload.twitter.com/i/media/upload.json?*",
+      "https://upload.x.com/i/media/upload.json?*",
+    ],
     types: ["xmlhttprequest"],
   },
   ["responseHeaders"],

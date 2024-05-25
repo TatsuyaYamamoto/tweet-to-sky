@@ -6,6 +6,9 @@
   "manifest": {
     "homepage_url": "https://t28.dev",
     "host_permissions": [
+      "https://x.com/*",
+      "https://upload.x.com/i/media/upload.json?*",
+      "https://caps.x.com/v2/cards/preview.json?*",
       "https://twitter.com/*",
       "https://upload.twitter.com/i/media/upload.json?*",
       "https://caps.twitter.com/v2/cards/preview.json?*"

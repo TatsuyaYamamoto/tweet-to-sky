@@ -35,9 +35,11 @@ export const PreviewCardApiResponseSchema = z.object({
 chrome.webRequest.onSendHeaders.addListener(
   (details) => {
     const { method, url: rawUrl, requestHeaders, initiator } = details;
-
-    if (!initiator?.startsWith("https://twitter.com")) {
-      // API Calling in this lister should be ignored
+    if (
+      !initiator?.startsWith("https://twitter.com") ||
+      !initiator?.startsWith("https://x.com")
+    ) {
+      // API Calling in this listener should be ignored
       return;
     }
 
@@ -89,7 +91,10 @@ chrome.webRequest.onSendHeaders.addListener(
       });
   },
   {
-    urls: ["https://caps.twitter.com/v2/cards/preview.json?*"],
+    urls: [
+      "https://caps.twitter.com/v2/cards/preview.json?*",
+      "https://caps.x.com/v2/cards/preview.json?*",
+    ],
     types: ["xmlhttprequest"],
   },
   ["requestHeaders"],

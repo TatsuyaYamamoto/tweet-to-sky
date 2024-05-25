@@ -11,11 +11,11 @@ import {
 } from "react-toastify";
 
 import { sendPostToBluesky } from "~background/messages/postToBluesky";
+import { onAskPostToBluesky } from "~contents/messages/askPostToBluesky";
 import ContentScriptUiCacheProvider, {
   cacheStyleElement,
 } from "~shared/components/ContentScriptUiCacheProvider";
 import AskPostToastContent from "~shared/components/ToastContent/AskPostToastContent";
-import { onAskPostToBluesky } from "~contents/messages/askPostToBluesky";
 import { useBluesky } from "~shared/hooks/useBluesky";
 import { useEnsureMedia } from "~shared/hooks/useEnsureMedia";
 
@@ -28,7 +28,7 @@ const defaultToastOptions: ToastOptions = {
 
 const globalStyles = css`
   ${reactToastifyStyle.replace(":root", ":host")}
-  
+
   :host {
     --color-bluesky-logo-blue-values: 0, 133, 255;
     --color-bluesky-logo-blue: rgb(var(--color-bluesky-logo-blue-values));
@@ -49,7 +49,7 @@ const globalStyles = css`
 `;
 
 export const config: PlasmoCSConfig = {
-  matches: ["https://twitter.com/*"],
+  matches: ["https://twitter.com/*", "https://x.com/*"],
 };
 
 export const getStyle: PlasmoGetStyle = () => {
